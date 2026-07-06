@@ -48,10 +48,10 @@ final class SmokeTestsSettings
     public function defaultEnvLines(): array
     {
         return [
-            'SMOKE_TESTS_PLAYGROUND_TESTS_PATH='.$this->defaultTestsPathValue(),
-            'SMOKE_TESTS_PLAYGROUND_RUN_COMMAND='.$this->runCommand(),
-            'SMOKE_TESTS_PLAYGROUND_RUN_WORKDIR='.$this->defaultRunWorkingDirectoryValue(),
-            'SMOKE_TESTS_PLAYGROUND_RUN_TIMEOUT='.$this->runTimeout(),
+            $this->formatEnvLine('SMOKE_TESTS_PLAYGROUND_TESTS_PATH', $this->defaultTestsPathValue()),
+            $this->formatEnvLine('SMOKE_TESTS_PLAYGROUND_RUN_COMMAND', $this->runCommand()),
+            $this->formatEnvLine('SMOKE_TESTS_PLAYGROUND_RUN_WORKDIR', $this->defaultRunWorkingDirectoryValue()),
+            $this->formatEnvLine('SMOKE_TESTS_PLAYGROUND_RUN_TIMEOUT', (string) $this->runTimeout()),
         ];
     }
 
@@ -92,5 +92,15 @@ final class SmokeTestsSettings
         return str_starts_with($path, '/')
             || str_starts_with($path, '\\')
             || preg_match('/^[A-Za-z]:[\\\\\\/]/', $path) === 1;
+    }
+
+    private function formatEnvLine(string $key, string $value): string
+    {
+        return $key.'="'.$this->escapeEnvValue($value).'"';
+    }
+
+    private function escapeEnvValue(string $value): string
+    {
+        return str_replace(['\\', '"', "\n", "\r"], ['\\\\', '\\"', '\\n', '\\r'], $value);
     }
 }
