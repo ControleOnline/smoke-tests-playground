@@ -45,6 +45,25 @@ final class SmokeTestsPublicStateFactoryTest extends TestCase
         self::assertArrayNotHasKey('report', $state);
     }
 
+    public function testRunResponseUsesTheLastMeaningfulLineFromTheFailureOutput(): void
+    {
+        $factory = $this->makeFactory($this->makeProjectDir());
+
+        $state = $factory->createRunResponse(
+            new SmokeRunResult(
+                false,
+                1,
+                "Running 1 test using 1 worker\n\nError: Playwright Test did not expect test.describe() to be called here.\n",
+                '',
+            ),
+            'POST',
+            '2026-07-06T12:00:00+00:00',
+        );
+
+        self::assertSame('failed', $state['status']);
+        self::assertSame('Error: Playwright Test did not expect test.describe() to be called here.', $state['message']);
+    }
+
     private function makeFactory(string $projectDir): SmokeTestsPublicStateFactory
     {
         $this->resetEnv();
