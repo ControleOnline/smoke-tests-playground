@@ -18,8 +18,10 @@
     const el = {
         statusPill: document.getElementById('status-pill'),
         flashMessage: document.getElementById('flash-message'),
-        summary: document.getElementById('summary-content'),
-        tests: document.getElementById('tests-content'),
+        progressValue: document.getElementById('progress-value'),
+        progressBar: document.getElementById('progress-bar'),
+        lastRunValue: document.getElementById('last-run-value'),
+        message: document.getElementById('message-content'),
         runButton: document.getElementById('run-button'),
         reloadButton: document.getElementById('reload-button'),
     };
@@ -73,72 +75,17 @@
 
     const render = (payload) => {
         state.data = payload;
-        const report = payload?.report ?? null;
         const status = payload?.status ?? 'idle';
         const statusLabel = status === 'passed' ? 'Passou' : (status === 'failed' ? 'Falhou' : 'Sem relatório');
+        const progress = Math.max(0, Math.min(100, Number(payload?.progress ?? 0)));
 
         el.statusPill.className = `status-pill ${status}`;
         el.statusPill.textContent = statusLabel;
+        el.progressValue.textContent = `${progress}%`;
+        el.progressBar.style.width = `${progress}%`;
+        el.lastRunValue.textContent = `Última execução: ${payload?.lastRunAt ?? 'sem registro'}`;
+        el.message.textContent = payload?.message ?? 'Sem mensagem disponível.';
 
-        const summaryParts = [
-            `<p><strong>Suite:</strong> ${escapeHtml(payload?.suite ?? 'smoke-tests-playground')}</p>`,
-            `<p><strong>Geração:</strong> ${escapeHtml(payload?.generatedAt ?? 'indisponível')}</p>`,
-            `<p><strong>Total:</strong> ${escapeHtml((report?.tests || []).length)} teste(s)</p>`,
-            `<p><strong>Tests path:</strong><br>${escapeHtml(payload?.testsPath ?? '')}</p>`,
-            `<p><strong>Report:</strong><br>${escapeHtml(payload?.reportPath ?? '')}</p>`,
-            `<p><strong>Run command:</strong><br>${escapeHtml(payload?.runCommand ?? '')}</p>`,
-        ];
-
-        el.summary.innerHTML = summaryParts.join('');
-
-        if (!report) {
-            el.tests.innerHTML = '<p class="muted">Ainda não existe relatório publicado para este ambiente.</p>';
-            return;
-        }
-
-        const rows = (report.tests || []).map((test) => {
-            const passed = (test.status ?? 'failed') === 'passed';
-            const badgeClass = passed ? 'pass' : 'fail';
-            const label = passed ? 'Passou' : 'Falhou';
-            const error = escapeHtml(test.error || 'Sem erro registrado');
-            return `
-                <tr>
-                    <td><strong>${escapeHtml(test.title ?? 'Teste sem título')}</strong></td>
-                    <td><span class="badge ${badgeClass}">${label}</span></td>
-                    <td>${error}</td>
-                </tr>
-            `;
-        }).join('');
-
-        const shots = (report.tests || []).flatMap((test) => (test.screenshots || []).map((shot) => {
-            if (!shot.src) {
-                return '';
-            }
-
-            return `
-                <div class="shot">
-                    <img src="${escapeHtml(shot.src)}" alt="${escapeHtml(shot.label ?? 'Screenshot')}">
-                    <div class="shot-meta">
-                        <p class="shot-title">${escapeHtml(shot.label ?? 'Screenshot')}</p>
-                        <div class="muted">${escapeHtml(shot.path ?? '')}</div>
-                    </div>
-                </div>
-            `;
-        })).join('');
-
-        el.tests.innerHTML = `
-            <table>
-                <thead>
-                    <tr>
-                        <th>Teste</th>
-                        <th>Status</th>
-                        <th>Erro</th>
-                    </tr>
-                </thead>
-                <tbody>${rows || ''}</tbody>
-            </table>
-            ${shots ? `<h2 class="section-title" style="margin-top:18px;">Imagens</h2><div class="shots">${shots}</div>` : ''}
-        `;
     };
 
     const loadReport = async () => {

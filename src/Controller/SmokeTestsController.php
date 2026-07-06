@@ -6,7 +6,7 @@ namespace ControleOnline\SmokeTestsPlayground\Controller;
 
 use ControleOnline\SmokeTestsPlayground\Service\SmokeRunner;
 use ControleOnline\SmokeTestsPlayground\Service\SmokeTestsPageRenderer;
-use ControleOnline\SmokeTestsPlayground\Service\SmokeTestsPayloadFactory;
+use ControleOnline\SmokeTestsPlayground\Service\SmokeTestsPublicStateFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,7 +17,7 @@ final class SmokeTestsController extends AbstractController
 {
     public function __construct(
         private readonly SmokeTestsPageRenderer $pageRenderer,
-        private readonly SmokeTestsPayloadFactory $payloadFactory,
+        private readonly SmokeTestsPublicStateFactory $publicStateFactory,
         private readonly SmokeRunner $runner,
     ) {
     }
@@ -37,14 +37,14 @@ final class SmokeTestsController extends AbstractController
     #[Route(path: '/tests/api', name: 'smoke_tests_playground_api', methods: ['GET'])]
     public function api(): JsonResponse
     {
-        return $this->json($this->payloadFactory->create());
+        return $this->json($this->publicStateFactory->create());
     }
 
     #[Route(path: '/tests/run', name: 'smoke_tests_playground_run', methods: ['POST'])]
     public function run(Request $request): JsonResponse
     {
         $runResult = $this->runner->run();
-        $payload = $this->payloadFactory->createRunPayload(
+        $payload = $this->publicStateFactory->createRunResponse(
             $runResult,
             $request->getMethod(),
             (new \DateTimeImmutable())->format(DATE_ATOM),

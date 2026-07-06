@@ -34,31 +34,24 @@ O comando cria:
 ## Rotas
 
 - `GET /tests` - UI HTML
-- `GET /tests/api` - JSON com o relatório mais recente
-- `POST /tests/run` - JSON com a execução de um novo smoke
+- `GET /tests/api` - JSON público com status, progresso e mensagem
+- `POST /tests/run` - JSON público com o resultado da execução
 - `GET /tests/ui` - alias da UI para compatibilidade
 
 ## Respostas
 
-`GET /tests/api` devolve um JSON com:
+`GET /tests/api` devolve um JSON público com:
 
 - `status`
-- `generatedAt`
-- `suite`
-- `testsPath`
-- `reportPath`
-- `runCommand`
-- `runWorkingDirectory`
-- `runTimeout`
-- `report`
+- `progress`
+- `message`
+- `lastRunAt`
 
 `POST /tests/run` executa o comando configurado, devolve o mesmo payload de `GET /tests/api` e adiciona:
 
 - `run.successful`
-- `run.exitCode`
-- `run.output`
-- `run.errorOutput`
-- `runRequestedAt`
+- `run.message`
+- `run.requestedAt`
 - `requestedMethod`
 
 `GET /tests` entrega uma página HTML renderizada por Twig que consome `GET /tests/api` e `POST /tests/run` via `fetch`.
@@ -66,11 +59,11 @@ O comando cria:
 ## Estrutura
 
 - `src/Controller/SmokeTestsController.php` mantém só as rotas
-- `src/Service/SmokeTestsPayloadFactory.php` monta os payloads JSON
+- `src/Service/SmokeTestsPublicStateFactory.php` monta os payloads públicos JSON
 - `src/Service/SmokeTestsPageRenderer.php` e `src/Service/SmokeTestsPageContextFactory.php` cuidam da UI
 - `templates/smoke_tests_playground/` contém o HTML, os estilos e o JavaScript separados
 
 ## Formato esperado do relatório
 
-O controller lê `report.json` dentro do diretório configurado em `SMOKE_TESTS_PLAYGROUND_TESTS_PATH`.
-As screenshots podem ser salvas como arquivos PNG relativos ao mesmo diretório, e a API embute as imagens no JSON como `src` em base64 para conferência rápida.
+O controller lê `report.json` dentro do diretório configurado em `SMOKE_TESTS_PLAYGROUND_TESTS_PATH`, mas o dado bruto não é exposto na API pública.
+O relatório continua sendo o arquivo interno usado para calcular o status público da tela.

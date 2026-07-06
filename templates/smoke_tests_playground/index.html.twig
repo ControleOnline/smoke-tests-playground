@@ -13,6 +13,9 @@
         data-run-endpoint="{{ run_endpoint|e('html_attr') }}"
         data-status-class="{{ status_class|e('html_attr') }}"
         data-status-label="{{ status_label|e('html_attr') }}"
+        data-progress="{{ progress|e('html_attr') }}"
+        data-message="{{ message|e('html_attr') }}"
+        data-last-run-at="{{ last_run_at|default('')|e('html_attr') }}"
     >
         <section class="hero">
             <div class="hero-row">
@@ -34,13 +37,20 @@
 
         <section class="grid">
             <aside class="card summary">
-                <h2 class="section-title">Resumo</h2>
-                <div id="summary-content" class="muted">Carregando...</div>
+                <h2 class="section-title">Estado público</h2>
+                <div class="metric">
+                    <span class="metric-label">Progresso</span>
+                    <strong id="progress-value">{{ progress }}%</strong>
+                </div>
+                <div class="progress-track" aria-hidden="true">
+                    <div id="progress-bar" class="progress-bar" style="width: {{ progress }}%;"></div>
+                </div>
+                <p id="last-run-value" class="muted">Última execução: {{ last_run_at|default('sem registro') }}</p>
             </aside>
 
             <article class="card content">
-                <h2 class="section-title">Testes registrados</h2>
-                <div id="tests-content" class="muted">Carregando...</div>
+                <h2 class="section-title">Mensagem</h2>
+                <div id="message-content" class="message-inline">{{ message }}</div>
             </article>
         </section>
     </main>
