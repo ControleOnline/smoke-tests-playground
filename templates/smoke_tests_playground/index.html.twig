@@ -45,12 +45,34 @@
                 <div class="progress-track" aria-hidden="true">
                     <div id="progress-bar" class="progress-bar" style="width: {{ progress }}%;"></div>
                 </div>
+                <div class="stats">
+                    <div class="stat">
+                        <span class="metric-label">Testes</span>
+                        <strong id="summary-total">{{ summary.total|default(0) }}</strong>
+                    </div>
+                    <div class="stat">
+                        <span class="metric-label">Passaram</span>
+                        <strong id="summary-passed">{{ summary.passed|default(0) }}</strong>
+                    </div>
+                    <div class="stat">
+                        <span class="metric-label">Falharam</span>
+                        <strong id="summary-failed">{{ summary.failed|default(0) }}</strong>
+                    </div>
+                </div>
                 <p id="last-run-value" class="muted">Última execução: {{ last_run_at|default('sem registro') }}</p>
             </aside>
 
             <article class="card content">
-                <h2 class="section-title">Mensagem</h2>
-                <div id="message-content" class="message-inline">{{ message }}</div>
+                <div class="section-head">
+                    <div>
+                        <h2 class="section-title">Testes</h2>
+                        <p class="muted">{{ headline }}</p>
+                    </div>
+                    <div class="message-inline" id="message-content">{{ headline }}</div>
+                </div>
+
+                <div id="tests-empty" class="empty-state">Ainda não há testes publicados.</div>
+                <div id="tests-list" class="tests-list"></div>
             </article>
         </section>
     </main>

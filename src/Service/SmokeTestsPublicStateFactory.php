@@ -45,6 +45,12 @@ final class SmokeTestsPublicStateFactory
                 'progress' => 0,
                 'message' => 'Ainda não existe um relatório publicado.',
                 'lastRunAt' => null,
+                'summary' => [
+                    'total' => 0,
+                    'passed' => 0,
+                    'failed' => 0,
+                ],
+                'tests' => [],
             ];
         }
 
@@ -56,6 +62,12 @@ final class SmokeTestsPublicStateFactory
             'progress' => $progress,
             'message' => $this->buildReportMessage($report),
             'lastRunAt' => $report['generatedAt'] ?? null,
+            'summary' => $report['summary'] ?? [
+                'total' => count($report['tests'] ?? []),
+                'passed' => 0,
+                'failed' => 0,
+            ],
+            'tests' => $report['tests'] ?? [],
         ];
     }
 

@@ -37,7 +37,7 @@ final class SmokeTestsControllerTest extends KernelTestCase
 
         $payload = json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR);
 
-        self::assertSame(['status', 'progress', 'message', 'lastRunAt'], array_keys($payload));
+        self::assertSame(['status', 'progress', 'message', 'lastRunAt', 'summary', 'tests'], array_keys($payload));
         self::assertArrayNotHasKey('testsPath', $payload);
         self::assertArrayNotHasKey('reportPath', $payload);
         self::assertArrayNotHasKey('runCommand', $payload);

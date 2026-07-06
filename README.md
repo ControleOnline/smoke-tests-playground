@@ -77,6 +77,10 @@ Se precisar sobrescrever o comando, mantenha `PLAYWRIGHT_BROWSERS_PATH="0"` sepa
 - `progress`
 - `message`
 - `lastRunAt`
+- `summary.total`
+- `summary.passed`
+- `summary.failed`
+- `tests[]` com nome, status, erro e prints sanitizados
 
 `POST /tests/run` executa o comando configurado, devolve o mesmo payload de `GET /tests/api` e adiciona:
 
@@ -86,6 +90,7 @@ Se precisar sobrescrever o comando, mantenha `PLAYWRIGHT_BROWSERS_PATH="0"` sepa
 - `requestedMethod`
 
 `GET /tests` entrega uma página HTML renderizada por Twig que consome `GET /tests/api` e `POST /tests/run` via `fetch`.
+A tela mostra o status geral, a lista de testes e os prints de cada caso publicado no último relatório.
 
 ## Estrutura
 

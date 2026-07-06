@@ -22,6 +22,11 @@
         progressBar: document.getElementById('progress-bar'),
         lastRunValue: document.getElementById('last-run-value'),
         message: document.getElementById('message-content'),
+        summaryTotal: document.getElementById('summary-total'),
+        summaryPassed: document.getElementById('summary-passed'),
+        summaryFailed: document.getElementById('summary-failed'),
+        testsEmpty: document.getElementById('tests-empty'),
+        testsList: document.getElementById('tests-list'),
         runButton: document.getElementById('run-button'),
         reloadButton: document.getElementById('reload-button'),
     };
@@ -78,14 +83,107 @@
         const status = payload?.status ?? 'idle';
         const statusLabel = status === 'passed' ? 'Passou' : (status === 'failed' ? 'Falhou' : 'Sem relatório');
         const progress = Math.max(0, Math.min(100, Number(payload?.progress ?? 0)));
+        const summary = payload?.summary || {total: 0, passed: 0, failed: 0};
+        const headline = buildHeadline(payload);
 
         el.statusPill.className = `status-pill ${status}`;
         el.statusPill.textContent = statusLabel;
         el.progressValue.textContent = `${progress}%`;
         el.progressBar.style.width = `${progress}%`;
         el.lastRunValue.textContent = `Última execução: ${payload?.lastRunAt ?? 'sem registro'}`;
-        el.message.textContent = payload?.message ?? 'Sem mensagem disponível.';
+        el.message.textContent = headline;
+        el.summaryTotal.textContent = summary.total ?? 0;
+        el.summaryPassed.textContent = summary.passed ?? 0;
+        el.summaryFailed.textContent = summary.failed ?? 0;
+        renderTests(Array.isArray(payload?.tests) ? payload.tests : []);
 
+    };
+
+    const buildHeadline = (payload) => {
+        const status = payload?.status ?? 'idle';
+        const summary = payload?.summary || {total: 0, passed: 0, failed: 0};
+
+        if (status === 'passed') {
+            return `Última execução concluída com sucesso. ${summary.passed} teste(s) passaram.`;
+        }
+
+        if (status === 'failed') {
+            return `${summary.failed} teste(s) falharam. Veja os cards abaixo para nome, status e prints.`;
+        }
+
+        return payload?.message ?? 'Sem mensagem disponível.';
+    };
+
+    const renderTests = (tests) => {
+        if (!tests.length) {
+            el.testsEmpty.style.display = 'block';
+            el.testsList.innerHTML = '';
+            return;
+        }
+
+        el.testsEmpty.style.display = 'none';
+        el.testsList.innerHTML = '';
+
+        tests.forEach((test) => {
+            const card = document.createElement('article');
+            card.className = 'test-card';
+
+            const head = document.createElement('div');
+            head.className = 'test-head';
+
+            const left = document.createElement('div');
+
+            const title = document.createElement('h3');
+            title.className = 'test-name';
+            title.textContent = test.name || 'Teste sem nome';
+            left.appendChild(title);
+
+            if (test.error) {
+                const error = document.createElement('div');
+                error.className = 'test-error';
+                error.textContent = test.error;
+                left.appendChild(error);
+            }
+
+            const badge = document.createElement('div');
+            badge.className = `test-status ${test.status || 'failed'}`;
+            badge.textContent = test.status === 'passed' ? 'Passou' : 'Falhou';
+
+            head.appendChild(left);
+            head.appendChild(badge);
+            card.appendChild(head);
+
+            const screenshots = Array.isArray(test.screenshots) ? test.screenshots.filter((item) => item && item.src) : [];
+            if (screenshots.length) {
+                const gallery = document.createElement('div');
+                gallery.className = 'screenshots';
+
+                screenshots.forEach((shot) => {
+                    const anchor = document.createElement('a');
+                    anchor.className = 'screenshot';
+                    anchor.href = shot.src;
+                    anchor.target = '_blank';
+                    anchor.rel = 'noreferrer';
+
+                    const img = document.createElement('img');
+                    img.loading = 'lazy';
+                    img.alt = shot.label || 'Print';
+                    img.src = shot.src;
+
+                    const label = document.createElement('span');
+                    label.className = 'screenshot-label';
+                    label.textContent = shot.label || 'Print';
+
+                    anchor.appendChild(img);
+                    anchor.appendChild(label);
+                    gallery.appendChild(anchor);
+                });
+
+                card.appendChild(gallery);
+            }
+
+            el.testsList.appendChild(card);
+        });
     };
 
     const loadReport = async () => {
@@ -113,14 +211,14 @@
         try {
             const payload = await fetchJson(endpoints.run, {method: 'POST'});
             render(payload);
-            setFlash(`Execução concluída com sucesso em ${escapeHtml(payload.runRequestedAt || '')}.`, 'success');
+            setFlash(`Execução concluída com sucesso em ${escapeHtml(payload.run?.requestedAt || '')}.`, 'success');
         } catch (error) {
             const payload = error.payload || null;
             if (payload) {
                 render(payload);
             }
 
-            const message = payload?.run?.errorOutput || payload?.run?.output || error.message;
+            const message = payload?.run?.message || payload?.run?.errorOutput || payload?.run?.output || error.message;
             setFlash(`Execução falhou: ${escapeHtml(message)}`, 'failed');
         } finally {
             setLoading(false);

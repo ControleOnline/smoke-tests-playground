@@ -23,7 +23,14 @@ final class SmokeTestsPageContextFactory
             'status_label' => $this->statusLabel($state['status']),
             'progress' => $state['progress'],
             'message' => $state['message'],
+            'headline' => $this->headline($state),
             'last_run_at' => $state['lastRunAt'] ?? null,
+            'tests' => $state['tests'] ?? [],
+            'summary' => $state['summary'] ?? [
+                'total' => 0,
+                'passed' => 0,
+                'failed' => 0,
+            ],
             'tests_endpoint' => '/tests/api',
             'run_endpoint' => '/tests/run',
         ];
@@ -35,6 +42,15 @@ final class SmokeTestsPageContextFactory
             'passed' => 'Passou',
             'failed' => 'Falhou',
             default => 'Sem relatório',
+        };
+    }
+
+    private function headline(array $state): string
+    {
+        return match ($state['status'] ?? 'idle') {
+            'passed' => sprintf('Última execução concluída com sucesso. %d teste(s) passaram.', (int) ($state['summary']['passed'] ?? 0)),
+            'failed' => sprintf('Falharam %d teste(s). Veja os cards abaixo para nome, status e prints.', (int) ($state['summary']['failed'] ?? 0)),
+            default => $state['message'] ?? 'Sem mensagem disponível.',
         };
     }
 }

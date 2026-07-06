@@ -22,7 +22,9 @@ final class SmokeTestsPublicStateFactoryTest extends TestCase
         self::assertSame(0, $state['progress']);
         self::assertSame('Ainda não existe um relatório publicado.', $state['message']);
         self::assertNull($state['lastRunAt']);
-        self::assertSame(['status', 'progress', 'message', 'lastRunAt'], array_keys($state));
+        self::assertSame(['status', 'progress', 'message', 'lastRunAt', 'summary', 'tests'], array_keys($state));
+        self::assertSame(['total' => 0, 'passed' => 0, 'failed' => 0], $state['summary']);
+        self::assertSame([], $state['tests']);
     }
 
     public function testCreateReturnsPublicRunResponseOnly(): void
@@ -40,9 +42,49 @@ final class SmokeTestsPublicStateFactoryTest extends TestCase
         self::assertSame('Execução concluída com sucesso.', $state['message']);
         self::assertSame('2026-07-06T12:00:00+00:00', $state['run']['requestedAt']);
         self::assertSame('POST', $state['run']['requestedMethod']);
+        self::assertArrayHasKey('summary', $state);
+        self::assertArrayHasKey('tests', $state);
         self::assertArrayNotHasKey('testsPath', $state);
         self::assertArrayNotHasKey('reportPath', $state);
         self::assertArrayNotHasKey('report', $state);
+    }
+
+    public function testCreateIncludesSanitizedTestsFromTheReport(): void
+    {
+        $projectDir = $this->makeProjectDir();
+        $this->writeReport($projectDir, [
+            'generatedAt' => '2026-07-06T12:00:00+00:00',
+            'suite' => 'smoke-tests-playground',
+            'tests' => [
+                [
+                    'title' => 'faz login e chega em listwinner com prints em /tests',
+                    'status' => 'failed',
+                    'error' => 'Expect failure',
+                    'screenshots' => [
+                        [
+                            'label' => 'Tela de login',
+                            'path' => '01-login-screen.png',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        file_put_contents($projectDir.'/var/tests/browser-smoke/transporter-login/01-login-screen.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO2P5foAAAAASUVORK5CYII='));
+
+        $factory = $this->makeFactory($projectDir);
+
+        $state = $factory->create();
+
+        self::assertSame('failed', $state['status']);
+        self::assertSame(['total' => 1, 'passed' => 0, 'failed' => 1], $state['summary']);
+        self::assertCount(1, $state['tests']);
+        self::assertSame('faz login e chega em listwinner com prints em /tests', $state['tests'][0]['name']);
+        self::assertSame('failed', $state['tests'][0]['status']);
+        self::assertSame('Expect failure', $state['tests'][0]['error']);
+        self::assertSame('Tela de login', $state['tests'][0]['screenshots'][0]['label']);
+        self::assertStringStartsWith('data:image/png;base64,', $state['tests'][0]['screenshots'][0]['src']);
+        self::assertArrayNotHasKey('path', $state['tests'][0]['screenshots'][0]);
     }
 
     public function testRunResponseKeepsTheFullFailureOutput(): void
@@ -85,6 +127,17 @@ final class SmokeTestsPublicStateFactoryTest extends TestCase
         mkdir($projectDir.'/var/tests/browser-smoke/transporter-login', 0777, true);
 
         return $projectDir;
+    }
+
+    /**
+     * @param array<string, mixed> $report
+     */
+    private function writeReport(string $projectDir, array $report): void
+    {
+        file_put_contents(
+            $projectDir.'/var/tests/browser-smoke/transporter-login/report.json',
+            json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
+        );
     }
 
     private function resetEnv(): void
