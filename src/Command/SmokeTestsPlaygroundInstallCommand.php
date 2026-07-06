@@ -53,7 +53,7 @@ final class SmokeTestsPlaygroundInstallCommand extends Command
     {
         $content = <<<YAML
 smoke_tests_playground:
-    resource: '%kernel.project_dir%/vendor/controleonline/smoke-tests-playground/src/Controller/'
+    resource: '../../vendor/controleonline/smoke-tests-playground/src/Controller/'
     type: attribute
 
 YAML;
