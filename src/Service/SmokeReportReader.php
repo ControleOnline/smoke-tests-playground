@@ -61,23 +61,51 @@ final class SmokeReportReader
     private function normalizeTests(array $tests): array
     {
         return array_map(function (array $test): array {
-            $screenshots = array_map(function (array $screenshot): array {
-                $path = $this->settings->testsPath().DIRECTORY_SEPARATOR.($screenshot['path'] ?? '');
-
-                return [
-                    'label' => (string) ($screenshot['label'] ?? 'Print'),
-                    'src' => is_file($path)
-                        ? 'data:image/png;base64,'.base64_encode((string) file_get_contents($path))
-                        : null,
-                ];
-            }, $test['screenshots'] ?? []);
+            $screenshots = $this->normalizeScreenshots($test['screenshots'] ?? []);
 
             return [
                 'name' => (string) ($test['title'] ?? $test['name'] ?? 'Teste sem nome'),
                 'status' => (string) ($test['status'] ?? 'failed'),
                 'error' => isset($test['error']) ? (string) $test['error'] : null,
                 'screenshots' => $screenshots,
+                'steps' => $this->normalizeSteps($test['steps'] ?? []),
             ];
         }, $tests);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $screenshots
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeScreenshots(array $screenshots): array
+    {
+        return array_map(function (array $screenshot): array {
+            $path = $this->settings->testsPath().DIRECTORY_SEPARATOR.($screenshot['path'] ?? '');
+
+            return [
+                'label' => (string) ($screenshot['label'] ?? 'Print'),
+                'src' => is_file($path)
+                    ? 'data:image/png;base64,'.base64_encode((string) file_get_contents($path))
+                    : null,
+            ];
+        }, $screenshots);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $steps
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeSteps(array $steps): array
+    {
+        return array_map(function (array $step): array {
+            return [
+                'name' => (string) ($step['title'] ?? $step['name'] ?? 'Etapa sem nome'),
+                'status' => (string) ($step['status'] ?? 'failed'),
+                'error' => isset($step['error']) ? (string) $step['error'] : null,
+                'screenshots' => $this->normalizeScreenshots($step['screenshots'] ?? []),
+            ];
+        }, $steps);
     }
 }

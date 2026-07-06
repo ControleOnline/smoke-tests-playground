@@ -57,7 +57,7 @@ O comando cria:
 O comando padrão assume Playwright instalado localmente no projeto consumidor:
 
 ```bash
-node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/transporter-login.spec.js
+node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/company-advertiser-route-smoke.spec.js
 ```
 
 Se precisar sobrescrever o comando, mantenha `PLAYWRIGHT_BROWSERS_PATH="0"` separado no ambiente. O runner da lib usa `node node_modules/@playwright/test/cli.js` e não depende de prefixo inline no comando.

@@ -15,8 +15,8 @@ final class SmokeTestsSettings
     {
         return $this->normalizePath($this->env(
             'SMOKE_TESTS_PLAYGROUND_TESTS_PATH',
-            $this->projectDir.'/var/tests/browser-smoke/transporter-login',
-        ) ?? $this->projectDir.'/var/tests/browser-smoke/transporter-login');
+            $this->projectDir.'/var/tests/browser-smoke/company-advertiser-route',
+        ) ?? $this->projectDir.'/var/tests/browser-smoke/company-advertiser-route');
     }
 
     public function reportPath(): string
@@ -28,8 +28,8 @@ final class SmokeTestsSettings
     {
         return $this->env(
             'SMOKE_TESTS_PLAYGROUND_RUN_COMMAND',
-            'node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/transporter-login.spec.js',
-        ) ?? 'node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/transporter-login.spec.js';
+            'node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/company-advertiser-route-smoke.spec.js',
+        ) ?? 'node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/company-advertiser-route-smoke.spec.js';
     }
 
     public function runWorkingDirectory(): string
@@ -58,7 +58,7 @@ final class SmokeTestsSettings
 
     public function defaultTestsPathValue(): string
     {
-        return 'var/tests/browser-smoke/transporter-login';
+        return 'var/tests/browser-smoke/company-advertiser-route';
     }
 
     public function defaultRunWorkingDirectoryValue(): string

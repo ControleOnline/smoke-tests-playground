@@ -5,7 +5,7 @@
 - A UI deve consumir a API por `fetch`; não leia `report.json` direto no HTML.
 - Mantenha controller fino: regras de montagem de payload ficam em services, e o HTML em `templates/smoke_tests_playground/`.
 - O backend da lib não deve hardcodar paths absolutos do workspace; use `SMOKE_TESTS_PLAYGROUND_TESTS_PATH` e os outros valores do `.env`.
-- O valor padrão de `SMOKE_TESTS_PLAYGROUND_TESTS_PATH` deve apontar para `var/tests/browser-smoke/transporter-login`.
+- O valor padrão de `SMOKE_TESTS_PLAYGROUND_TESTS_PATH` deve apontar para `var/tests/browser-smoke/company-advertiser-route`.
 - O valor padrão de `SMOKE_TESTS_PLAYGROUND_RUN_COMMAND` deve usar `node node_modules/@playwright/test/cli.js`, sem depender de `npx` nem de prefixo inline de variável de ambiente.
 - O instalador deve escrever `PLAYWRIGHT_BROWSERS_PATH=0` no `.env` para evitar depender do cache do usuário do sistema.
 - A API pública não deve expor `testsPath`, `reportPath`, `runCommand`, `runWorkingDirectory`, `runTimeout` nem o `report` bruto; exponha `status`, `progress`, `message`, `lastRunAt`, `summary` e `tests` sanitizados com prints em base64.

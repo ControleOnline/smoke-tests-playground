@@ -14,7 +14,7 @@ final class SmokeTestsSettingsTest extends TestCase
         $settings = new SmokeTestsSettings('/app');
 
         self::assertSame(
-            'node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/transporter-login.spec.js',
+            'node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/company-advertiser-route-smoke.spec.js',
             $settings->runCommand(),
         );
     }

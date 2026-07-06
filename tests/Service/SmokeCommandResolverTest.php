@@ -12,12 +12,12 @@ final class SmokeCommandResolverTest extends TestCase
     public function testPlaywrightExecutableIsResolvedForTheCurrentPlatform(): void
     {
         $resolver = new SmokeCommandResolver();
-        $arguments = $resolver->toProcessArguments('node_modules/.bin/playwright test --config=playwright.config.cjs tests/browser/transporter-login.spec.js');
+        $arguments = $resolver->toProcessArguments('node_modules/.bin/playwright test --config=playwright.config.cjs tests/browser/company-advertiser-route-smoke.spec.js');
 
         self::assertSame('node_modules/.bin/playwright', $arguments[0]);
 
         self::assertSame('test', $arguments[1]);
         self::assertSame('--config=playwright.config.cjs', $arguments[2]);
-        self::assertSame('tests/browser/transporter-login.spec.js', $arguments[3]);
+        self::assertSame('tests/browser/company-advertiser-route-smoke.spec.js', $arguments[3]);
     }
 }

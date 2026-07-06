@@ -57,7 +57,7 @@ final class SmokeTestsPublicStateFactoryTest extends TestCase
             'suite' => 'smoke-tests-playground',
             'tests' => [
                 [
-                    'title' => 'faz login e chega em listwinner com prints em /tests',
+                    'title' => 'fluxo da nova viagem',
                     'status' => 'failed',
                     'error' => 'Expect failure',
                     'screenshots' => [
@@ -66,11 +66,25 @@ final class SmokeTestsPublicStateFactoryTest extends TestCase
                             'path' => '01-login-screen.png',
                         ],
                     ],
+                    'steps' => [
+                        [
+                            'title' => 'abre o staging e autentica',
+                            'status' => 'passed',
+                            'screenshots' => [
+                                [
+                                    'label' => 'Login aberto',
+                                    'path' => 'steps/01-login-open.png',
+                                ],
+                            ],
+                        ],
+                    ],
                 ],
             ],
         ]);
 
-        file_put_contents($projectDir.'/var/tests/browser-smoke/transporter-login/01-login-screen.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO2P5foAAAAASUVORK5CYII='));
+        file_put_contents($projectDir.'/var/tests/browser-smoke/company-advertiser-route/01-login-screen.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO2P5foAAAAASUVORK5CYII='));
+        mkdir($projectDir.'/var/tests/browser-smoke/company-advertiser-route/steps', 0777, true);
+        file_put_contents($projectDir.'/var/tests/browser-smoke/company-advertiser-route/steps/01-login-open.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO2P5foAAAAASUVORK5CYII='));
 
         $factory = $this->makeFactory($projectDir);
 
@@ -79,12 +93,15 @@ final class SmokeTestsPublicStateFactoryTest extends TestCase
         self::assertSame('failed', $state['status']);
         self::assertSame(['total' => 1, 'passed' => 0, 'failed' => 1], $state['summary']);
         self::assertCount(1, $state['tests']);
-        self::assertSame('faz login e chega em listwinner com prints em /tests', $state['tests'][0]['name']);
+        self::assertSame('fluxo da nova viagem', $state['tests'][0]['name']);
         self::assertSame('failed', $state['tests'][0]['status']);
         self::assertSame('Expect failure', $state['tests'][0]['error']);
         self::assertSame('Tela de login', $state['tests'][0]['screenshots'][0]['label']);
         self::assertStringStartsWith('data:image/png;base64,', $state['tests'][0]['screenshots'][0]['src']);
         self::assertArrayNotHasKey('path', $state['tests'][0]['screenshots'][0]);
+        self::assertSame('abre o staging e autentica', $state['tests'][0]['steps'][0]['name']);
+        self::assertSame('passed', $state['tests'][0]['steps'][0]['status']);
+        self::assertSame('Login aberto', $state['tests'][0]['steps'][0]['screenshots'][0]['label']);
     }
 
     public function testRunResponseKeepsTheFullFailureOutput(): void
@@ -95,7 +112,7 @@ final class SmokeTestsPublicStateFactoryTest extends TestCase
             new SmokeRunResult(
                 false,
                 1,
-                "[chromium] › tests/browser/transporter-login.spec.js:44:3 › browser smoke - transporter login › faz login e chega em listwinner com prints em /tests\n",
+                "[chromium] › tests/browser/company-advertiser-route-smoke.spec.js:168:3 › browser smoke - company advertiser route › abre o staging, cria a viagem e valida a listagem com prints em /tests\n",
                 "Error: Playwright Test did not expect test.describe() to be called here.\n",
             ),
             'POST',
@@ -103,7 +120,7 @@ final class SmokeTestsPublicStateFactoryTest extends TestCase
         );
 
         self::assertSame('failed', $state['status']);
-        self::assertStringContainsString('[chromium] › tests/browser/transporter-login.spec.js:44:3', $state['message']);
+        self::assertStringContainsString('[chromium] › tests/browser/company-advertiser-route-smoke.spec.js', $state['message']);
         self::assertStringContainsString('Error: Playwright Test did not expect test.describe() to be called here.', $state['message']);
         self::assertStringContainsString("--- stdout ---", $state['message']);
     }
@@ -111,7 +128,7 @@ final class SmokeTestsPublicStateFactoryTest extends TestCase
     private function makeFactory(string $projectDir): SmokeTestsPublicStateFactory
     {
         $this->resetEnv();
-        $_ENV['SMOKE_TESTS_PLAYGROUND_TESTS_PATH'] = $projectDir.'/var/tests/browser-smoke/transporter-login';
+        $_ENV['SMOKE_TESTS_PLAYGROUND_TESTS_PATH'] = $projectDir.'/var/tests/browser-smoke/company-advertiser-route';
         putenv('SMOKE_TESTS_PLAYGROUND_TESTS_PATH='.$_ENV['SMOKE_TESTS_PLAYGROUND_TESTS_PATH']);
 
         $settings = new SmokeTestsSettings($projectDir);
@@ -124,7 +141,7 @@ final class SmokeTestsPublicStateFactoryTest extends TestCase
     private function makeProjectDir(): string
     {
         $projectDir = sys_get_temp_dir().'/smoke-tests-playground-'.bin2hex(random_bytes(6));
-        mkdir($projectDir.'/var/tests/browser-smoke/transporter-login', 0777, true);
+        mkdir($projectDir.'/var/tests/browser-smoke/company-advertiser-route', 0777, true);
 
         return $projectDir;
     }
@@ -135,7 +152,7 @@ final class SmokeTestsPublicStateFactoryTest extends TestCase
     private function writeReport(string $projectDir, array $report): void
     {
         file_put_contents(
-            $projectDir.'/var/tests/browser-smoke/transporter-login/report.json',
+            $projectDir.'/var/tests/browser-smoke/company-advertiser-route/report.json',
             json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
         );
     }

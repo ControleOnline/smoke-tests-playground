@@ -96,7 +96,6 @@
         el.summaryPassed.textContent = summary.passed ?? 0;
         el.summaryFailed.textContent = summary.failed ?? 0;
         renderTests(Array.isArray(payload?.tests) ? payload.tests : []);
-
     };
 
     const buildHeadline = (payload) => {
@@ -153,37 +152,99 @@
             head.appendChild(badge);
             card.appendChild(head);
 
-            const screenshots = Array.isArray(test.screenshots) ? test.screenshots.filter((item) => item && item.src) : [];
-            if (screenshots.length) {
-                const gallery = document.createElement('div');
-                gallery.className = 'screenshots';
+            const steps = Array.isArray(test.steps) ? test.steps.filter((item) => item && item.name) : [];
+            if (steps.length) {
+                const stepsIntro = document.createElement('p');
+                stepsIntro.className = 'muted test-steps-intro';
+                stepsIntro.textContent = 'Etapas da execução';
+                card.appendChild(stepsIntro);
 
-                screenshots.forEach((shot) => {
-                    const anchor = document.createElement('a');
-                    anchor.className = 'screenshot';
-                    anchor.href = shot.src;
-                    anchor.target = '_blank';
-                    anchor.rel = 'noreferrer';
+                const stepsList = document.createElement('div');
+                stepsList.className = 'steps-list';
 
-                    const img = document.createElement('img');
-                    img.loading = 'lazy';
-                    img.alt = shot.label || 'Print';
-                    img.src = shot.src;
+                steps.forEach((step, index) => {
+                    const stepCard = document.createElement('section');
+                    stepCard.className = 'step-card';
 
-                    const label = document.createElement('span');
-                    label.className = 'screenshot-label';
-                    label.textContent = shot.label || 'Print';
+                    const stepHead = document.createElement('div');
+                    stepHead.className = 'step-head';
 
-                    anchor.appendChild(img);
-                    anchor.appendChild(label);
-                    gallery.appendChild(anchor);
+                    const stepTitleWrap = document.createElement('div');
+
+                    const stepTitle = document.createElement('h4');
+                    stepTitle.className = 'step-name';
+                    stepTitle.textContent = `${String(index + 1).padStart(2, '0')}. ${step.name}`;
+                    stepTitleWrap.appendChild(stepTitle);
+
+                    if (step.error) {
+                        const stepError = document.createElement('div');
+                        stepError.className = 'step-error';
+                        stepError.textContent = step.error;
+                        stepTitleWrap.appendChild(stepError);
+                    }
+
+                    const stepBadge = document.createElement('div');
+                    stepBadge.className = `step-status ${step.status || 'failed'}`;
+                    stepBadge.textContent = step.status === 'passed'
+                        ? 'Passou'
+                        : (step.status === 'skipped' ? 'Ignorado' : 'Falhou');
+
+                    stepHead.appendChild(stepTitleWrap);
+                    stepHead.appendChild(stepBadge);
+                    stepCard.appendChild(stepHead);
+
+                    renderScreenshots(stepCard, Array.isArray(step.screenshots) ? step.screenshots : [], 'step-screenshots');
+                    stepsList.appendChild(stepCard);
                 });
 
-                card.appendChild(gallery);
+                card.appendChild(stepsList);
+            }
+
+            const screenshots = Array.isArray(test.screenshots) ? test.screenshots.filter((item) => item && item.src) : [];
+            if (screenshots.length) {
+                const screenshotsIntro = document.createElement('p');
+                screenshotsIntro.className = 'muted test-steps-intro';
+                screenshotsIntro.textContent = 'Capturas gerais';
+                card.appendChild(screenshotsIntro);
+                renderScreenshots(card, screenshots);
             }
 
             el.testsList.appendChild(card);
         });
+    };
+
+    const renderScreenshots = (container, screenshots, className = 'screenshots') => {
+        const gallery = document.createElement('div');
+        gallery.className = className;
+
+        screenshots.forEach((shot) => {
+            if (!shot || !shot.src) {
+                return;
+            }
+
+            const anchor = document.createElement('a');
+            anchor.className = 'screenshot';
+            anchor.href = shot.src;
+            anchor.target = '_blank';
+            anchor.rel = 'noreferrer';
+
+            const img = document.createElement('img');
+            img.loading = 'lazy';
+            img.alt = shot.label || 'Print';
+            img.src = shot.src;
+
+            const label = document.createElement('span');
+            label.className = 'screenshot-label';
+            label.textContent = shot.label || 'Print';
+
+            anchor.appendChild(img);
+            anchor.appendChild(label);
+            gallery.appendChild(anchor);
+        });
+
+        if (gallery.childElementCount > 0) {
+            container.appendChild(gallery);
+        }
     };
 
     const loadReport = async () => {
