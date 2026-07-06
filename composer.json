@@ -29,6 +29,9 @@
       "ControleOnline\\SmokeTestsPlayground\\Tests\\": "tests/"
     }
   },
+  "require-dev": {
+    "phpunit/phpunit": "^9.6"
+  },
   "minimum-stability": "stable",
   "prefer-stable": true,
   "config": {
