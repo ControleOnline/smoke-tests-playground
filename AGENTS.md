@@ -9,3 +9,4 @@
 - A API pública não deve expor `testsPath`, `reportPath`, `runCommand`, `runWorkingDirectory`, `runTimeout`, `report` nem screenshots; exponha só estado, progresso, mensagem e resultado operacional.
 - Quando alterar o contrato público, atualize a API, a página HTML e o `README.md` juntos.
 - O comando de instalação deve continuar sendo o ponto de entrada para escrever defaults no projeto consumidor.
+- A documentação do pacote não deve citar ambientes ou marcas específicas do consumidor; use placeholders como `<your-host>` e `<basic-auth-user>`.

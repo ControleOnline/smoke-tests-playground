@@ -67,3 +67,25 @@ O comando cria:
 
 O controller lê `report.json` dentro do diretório configurado em `SMOKE_TESTS_PLAYGROUND_TESTS_PATH`, mas o dado bruto não é exposto na API pública.
 O relatório continua sendo o arquivo interno usado para calcular o status público da tela.
+
+## Conferência manual
+
+Depois de instalar o pacote no projeto consumidor e publicar a UI, valide o smoke run com um comando simples.
+
+`GET /tests/api` consulta o último estado público:
+
+```bash
+curl -u "<basic-auth-user>:<basic-auth-pass>" \
+  -H "Accept: application/json" \
+  "https://<your-host>/tests/api"
+```
+
+`POST /tests/run` dispara uma nova execução e devolve JSON com o resultado:
+
+```bash
+curl -u "<basic-auth-user>:<basic-auth-pass>" \
+  -X POST "https://<your-host>/tests/run" \
+  -H "Accept: application/json"
+```
+
+Se estiver usando `cmd.exe` no Windows, substitua as barras invertidas por `^` no fim das linhas.
