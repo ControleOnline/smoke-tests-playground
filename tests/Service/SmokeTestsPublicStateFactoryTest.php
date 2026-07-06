@@ -45,7 +45,7 @@ final class SmokeTestsPublicStateFactoryTest extends TestCase
         self::assertArrayNotHasKey('report', $state);
     }
 
-    public function testRunResponseUsesTheLastMeaningfulLineFromTheFailureOutput(): void
+    public function testRunResponseKeepsTheFullFailureOutput(): void
     {
         $factory = $this->makeFactory($this->makeProjectDir());
 
@@ -53,15 +53,17 @@ final class SmokeTestsPublicStateFactoryTest extends TestCase
             new SmokeRunResult(
                 false,
                 1,
-                "Running 1 test using 1 worker\n\nError: Playwright Test did not expect test.describe() to be called here.\n",
-                '',
+                "[chromium] › tests/browser/transporter-login.spec.js:44:3 › browser smoke - transporter login › faz login e chega em listwinner com prints em /tests\n",
+                "Error: Playwright Test did not expect test.describe() to be called here.\n",
             ),
             'POST',
             '2026-07-06T12:00:00+00:00',
         );
 
         self::assertSame('failed', $state['status']);
-        self::assertSame('Error: Playwright Test did not expect test.describe() to be called here.', $state['message']);
+        self::assertStringContainsString('[chromium] › tests/browser/transporter-login.spec.js:44:3', $state['message']);
+        self::assertStringContainsString('Error: Playwright Test did not expect test.describe() to be called here.', $state['message']);
+        self::assertStringContainsString("--- stdout ---", $state['message']);
     }
 
     private function makeFactory(string $projectDir): SmokeTestsPublicStateFactory

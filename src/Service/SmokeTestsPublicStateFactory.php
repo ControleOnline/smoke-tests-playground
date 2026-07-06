@@ -78,27 +78,24 @@ final class SmokeTestsPublicStateFactory
             return 'Execução concluída com sucesso.';
         }
 
-        $message = $this->extractMeaningfulLine($runResult->errorOutput !== '' ? $runResult->errorOutput : $runResult->output);
-        if ($message === null) {
+        $parts = [];
+
+        if (trim($runResult->errorOutput) !== '') {
+            $parts[] = trim($runResult->errorOutput);
+        }
+
+        if (trim($runResult->output) !== '') {
+            $parts[] = trim($runResult->output);
+        }
+
+        if ($parts === []) {
             return 'A execução falhou sem detalhes adicionais.';
         }
 
-        if (function_exists('mb_strimwidth')) {
-            return mb_strimwidth($message, 0, 240, '...');
+        if (count($parts) === 1) {
+            return $parts[0];
         }
 
-        return strlen($message) > 240 ? substr($message, 0, 240).'...' : $message;
-    }
-
-    private function extractMeaningfulLine(string $text): ?string
-    {
-        $lines = preg_split('/\R/', trim($text)) ?: [];
-        $lines = array_values(array_filter($lines, static fn (string $line): bool => trim($line) !== ''));
-
-        if ($lines === []) {
-            return null;
-        }
-
-        return trim((string) end($lines));
+        return implode("\n\n--- stdout ---\n\n", $parts);
     }
 }
