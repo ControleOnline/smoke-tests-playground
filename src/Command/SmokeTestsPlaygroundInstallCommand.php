@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ControleOnline\SmokeTestsPlayground\Command;
 
+use ControleOnline\SmokeTestsPlayground\Service\SmokeBrowserInstallerInterface;
 use ControleOnline\SmokeTestsPlayground\Service\SmokeTestsSettings;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -20,6 +21,7 @@ final class SmokeTestsPlaygroundInstallCommand extends Command
     public function __construct(
         private readonly KernelInterface $kernel,
         private readonly SmokeTestsSettings $settings,
+        private readonly SmokeBrowserInstallerInterface $browserInstaller,
     ) {
         parent::__construct();
     }
@@ -28,9 +30,20 @@ final class SmokeTestsPlaygroundInstallCommand extends Command
     {
         $projectDir = rtrim($this->kernel->getProjectDir(), '/\\');
 
-        $this->writeEnvLocal($projectDir.'/.env.local');
+        $this->writeEnvLocal($projectDir.'/.env');
         $this->writeRoutesConfig($projectDir.'/config/routes/smoke_tests_playground.yaml');
         $this->writeServicesConfig($projectDir.'/config/services/smoke_tests_playground.yaml');
+
+        try {
+            $this->browserInstaller->install();
+            $output->writeln('<info>Browsers do Playwright instalados no projeto consumidor.</info>');
+        } catch (\Throwable $exception) {
+            $output->writeln('<comment>Não foi possível instalar os browsers automaticamente.</comment>');
+            $output->writeln('<comment>Mensagem:</comment> '.$exception->getMessage());
+            $this->writeRootInstructions($output, $projectDir);
+
+            return Command::FAILURE;
+        }
 
         $output->writeln('<info>Smoke Tests Playground configurado.</info>');
         $output->writeln('Reinicie o cache se necessário: <comment>php bin/console cache:clear</comment>');
@@ -73,6 +86,21 @@ services:
 YAML;
 
         $this->writeFileIfNeeded($path, $content);
+    }
+
+    private function writeRootInstructions(OutputInterface $output, string $projectDir): void
+    {
+        $output->writeln('');
+        $output->writeln('<comment>Comandos para executar como root, se houver problema de permissão:</comment>');
+        $output->writeln(sprintf('<comment>chown -R staging:staging %s</comment>', escapeshellarg($projectDir)));
+        $output->writeln(sprintf(
+            '<comment>su - staging -c %s</comment>',
+            escapeshellarg('cd '.$projectDir.' && npm run test:browser:install'),
+        ));
+        $output->writeln(sprintf(
+            '<comment>su - staging -c %s</comment>',
+            escapeshellarg('cd '.$projectDir.' && php bin/console smoke-tests-playground:install'),
+        ));
     }
 
     private function writeEnvLines(string $path, array $lines): void

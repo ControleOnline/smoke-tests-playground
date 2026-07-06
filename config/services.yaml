@@ -8,6 +8,8 @@ services:
         resource: '../src/'
         exclude: '../src/{DependencyInjection,Resources,SmokeTestsPlaygroundBundle.php}'
 
+    ControleOnline\SmokeTestsPlayground\Service\SmokeBrowserInstallerInterface: '@ControleOnline\SmokeTestsPlayground\Service\SmokeBrowserInstaller'
+
     ControleOnline\SmokeTestsPlayground\Service\SmokeTestsSettings:
         arguments:
             $projectDir: '%kernel.project_dir%'

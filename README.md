@@ -19,7 +19,7 @@ nvm install --lts
 nvm use --lts
 ```
 
-3. Instale o Playwright no projeto consumidor e gere os browsers no cache local do projeto:
+3. Instale o Playwright no projeto consumidor. O bootstrap do pacote tenta baixar os browsers sozinho, mas este comando continua útil para reinstalação manual:
 
 ```bash
 npm install -D @playwright/test
@@ -39,9 +39,11 @@ ControleOnline\SmokeTestsPlayground\SmokeTestsPlaygroundBundle::class => ['all' 
 php bin/console smoke-tests-playground:install
 ```
 
+Se houver problema de permissão, o próprio comando imprime os comandos que precisam ser executados como `root`.
+
 O comando cria:
 
-- `.env.local` com os defaults do smoke
+- `.env` com os defaults do smoke
 - `config/routes/smoke_tests_playground.yaml`
 - `config/services/smoke_tests_playground.yaml`
 

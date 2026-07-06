@@ -7,8 +7,9 @@
 - O backend da lib não deve hardcodar paths absolutos do workspace; use `SMOKE_TESTS_PLAYGROUND_TESTS_PATH` e os outros valores do `.env`.
 - O valor padrão de `SMOKE_TESTS_PLAYGROUND_TESTS_PATH` deve apontar para `var/tests/browser-smoke/transporter-login`.
 - O valor padrão de `SMOKE_TESTS_PLAYGROUND_RUN_COMMAND` deve usar `node node_modules/@playwright/test/cli.js`, sem depender de `npx` nem de prefixo inline de variável de ambiente.
-- O instalador deve escrever `PLAYWRIGHT_BROWSERS_PATH=0` no `.env.local` para evitar depender do cache do usuário do sistema.
+- O instalador deve escrever `PLAYWRIGHT_BROWSERS_PATH=0` no `.env` para evitar depender do cache do usuário do sistema.
 - A API pública não deve expor `testsPath`, `reportPath`, `runCommand`, `runWorkingDirectory`, `runTimeout`, `report` nem screenshots; exponha só estado, progresso, mensagem e resultado operacional.
 - Quando alterar o contrato público, atualize a API, a página HTML e o `README.md` juntos.
 - O comando de instalação deve continuar sendo o ponto de entrada para escrever defaults no projeto consumidor.
+- O comando de instalação deve tentar baixar os browsers automaticamente e, se não conseguir por permissão, imprimir os comandos de `root` necessários para corrigir o host.
 - A documentação do pacote não deve citar ambientes ou marcas específicas do consumidor; use placeholders como `<your-host>` e `<basic-auth-user>`.
