@@ -1,0 +1,30 @@
+{
+  "name": "controleonline/smoke-tests-playground",
+  "description": "Playground for browser smoke tests and release validation in ControleOnline projects.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Controle Online",
+      "email": "ti@controleonline.com"
+    }
+  ],
+  "require": {
+    "php": "^8.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "ControleOnline\\SmokeTestsPlayground\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "ControleOnline\\SmokeTestsPlayground\\Tests\\": "tests/"
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "config": {
+    "sort-packages": true
+  }
+}
