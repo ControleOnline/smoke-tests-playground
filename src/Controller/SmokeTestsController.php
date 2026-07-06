@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace ControleOnline\SmokeTestsPlayground\Controller;
 
 use ControleOnline\SmokeTestsPlayground\Service\SmokeReportReader;
-use ControleOnline\SmokeTestsPlayground\Service\SmokeRunResult;
 use ControleOnline\SmokeTestsPlayground\Service\SmokeRunner;
 use ControleOnline\SmokeTestsPlayground\Service\SmokeTestsSettings;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -22,42 +23,21 @@ final class SmokeTestsController extends AbstractController
     }
 
     #[Route(path: '/tests', name: 'smoke_tests_playground_index', methods: ['GET'])]
-    public function index(): Response
+    public function index(): JsonResponse
     {
-        return $this->renderPage($this->reportReader->readLatest());
+        return $this->json($this->buildPayload());
     }
 
-    #[Route(path: '/tests/run', name: 'smoke_tests_playground_run', methods: ['POST'])]
-    public function run(): Response
+    #[Route(path: '/tests/ui', name: 'smoke_tests_playground_ui', methods: ['GET'])]
+    public function ui(): Response
     {
-        $runResult = $this->runner->run();
-
-        return $this->renderPage(
-            $this->reportReader->readLatest(),
-            $runResult,
-        );
-    }
-
-    private function renderPage(?array $report, ?SmokeRunResult $runResult = null): Response
-    {
-        $title = 'Smoke Tests Playground';
-        $overallStatus = $report['status'] ?? 'idle';
-        $statusLabel = $overallStatus === 'passed' ? 'Passou' : ($overallStatus === 'failed' ? 'Falhou' : 'Sem relatório');
-        $statusClass = $overallStatus === 'passed' ? 'passed' : ($overallStatus === 'failed' ? 'failed' : 'idle');
-        $titleEsc = $this->e($title);
-        $statusLabelEsc = $this->e($statusLabel);
-        $statusClassEsc = $this->e($statusClass);
-        $flashHtml = $this->buildRunFeedback($runResult);
-        $testsHtml = $this->buildTestsHtml($report['tests'] ?? []);
-        $summaryHtml = $this->buildSummaryHtml($report);
-
-        $html = <<<HTML
+        $html = <<<'HTML'
 <!doctype html>
 <html lang="pt">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{$titleEsc}</title>
+    <title>__PAGE_TITLE__</title>
     <style>
         :root {
             color-scheme: light;
@@ -173,6 +153,11 @@ final class SmokeTestsController extends AbstractController
         .button.secondary {
             background: #e2e8f0;
             color: #0f172a;
+        }
+
+        .button[disabled] {
+            opacity: .7;
+            cursor: progress;
         }
 
         .grid {
@@ -306,133 +291,259 @@ final class SmokeTestsController extends AbstractController
                 <div>
                     <p class="eyebrow">Smoke tests playground</p>
                     <h1>Último teste do transporter</h1>
-                    <p class="subtitle">Página inicial da lib para conferir o último relatório disponível e disparar uma nova execução sem sair do navegador.</p>
+                    <p class="subtitle">Essa página consome a API JSON em `/tests` e dispara novos testes via `/tests/run`.</p>
                 </div>
-                <div class="status-pill {$statusClassEsc}">{$statusLabelEsc}</div>
+                <div id="status-pill" class="status-pill __STATUS_CLASS__">__STATUS_LABEL__</div>
             </div>
 
-            {$flashHtml}
+            <div id="flash-message" class="message warning" style="display:none;"></div>
 
             <div class="controls">
-                <form method="post" action="/tests/run">
-                    <button class="button primary" type="submit">Rodar novos testes</button>
-                </form>
-                <a class="button secondary" href="/tests">Recarregar relatório</a>
+                <button id="run-button" class="button primary" type="button">Rodar novos testes</button>
+                <button id="reload-button" class="button secondary" type="button">Recarregar relatório</button>
             </div>
         </section>
 
         <section class="grid">
             <aside class="card summary">
                 <h2 class="section-title">Resumo</h2>
-                {$summaryHtml}
+                <div id="summary-content" class="muted">Carregando...</div>
             </aside>
 
             <article class="card content">
                 <h2 class="section-title">Testes registrados</h2>
-                {$testsHtml}
+                <div id="tests-content" class="muted">Carregando...</div>
             </article>
         </section>
     </main>
+
+    <script>
+        const endpoints = {
+            tests: '/tests',
+            run: '/tests/run',
+        };
+
+        const state = {
+            loading: false,
+            data: null,
+            lastError: null,
+        };
+
+        const el = {
+            statusPill: document.getElementById('status-pill'),
+            flashMessage: document.getElementById('flash-message'),
+            summary: document.getElementById('summary-content'),
+            tests: document.getElementById('tests-content'),
+            runButton: document.getElementById('run-button'),
+            reloadButton: document.getElementById('reload-button'),
+        };
+
+        const escapeHtml = (value) => String(value)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+
+        const setFlash = (message, type = 'warning') => {
+            if (!message) {
+                el.flashMessage.style.display = 'none';
+                el.flashMessage.textContent = '';
+                el.flashMessage.className = 'message warning';
+                return;
+            }
+
+            el.flashMessage.style.display = 'block';
+            el.flashMessage.className = `message ${type}`;
+            el.flashMessage.innerHTML = message;
+        };
+
+        const setLoading = (value) => {
+            state.loading = value;
+            el.runButton.disabled = value;
+            el.reloadButton.disabled = value;
+            el.runButton.textContent = value ? 'Rodando...' : 'Rodar novos testes';
+        };
+
+        const fetchJson = async (url, options = {}) => {
+            const response = await fetch(url, {
+                headers: {
+                    Accept: 'application/json',
+                    ...(options.headers || {}),
+                },
+                ...options,
+            });
+
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok) {
+                const error = new Error(`HTTP ${response.status}`);
+                error.payload = payload;
+                throw error;
+            }
+
+            return payload;
+        };
+
+        const render = (payload) => {
+            state.data = payload;
+            const report = payload?.report ?? null;
+            const status = payload?.status ?? 'idle';
+            const statusLabel = status === 'passed' ? 'Passou' : (status === 'failed' ? 'Falhou' : 'Sem relatório');
+
+            el.statusPill.className = `status-pill ${status}`;
+            el.statusPill.textContent = statusLabel;
+
+            const summaryParts = [
+                `<p><strong>Suite:</strong> ${escapeHtml(payload?.suite ?? 'smoke-tests-playground')}</p>`,
+                `<p><strong>Geração:</strong> ${escapeHtml(payload?.generatedAt ?? 'indisponível')}</p>`,
+                `<p><strong>Total:</strong> ${escapeHtml((report?.tests || []).length)} teste(s)</p>`,
+                `<p><strong>Tests path:</strong><br>${escapeHtml(payload?.testsPath ?? '')}</p>`,
+                `<p><strong>Report:</strong><br>${escapeHtml(payload?.reportPath ?? '')}</p>`,
+                `<p><strong>Run command:</strong><br>${escapeHtml(payload?.runCommand ?? '')}</p>`,
+            ];
+
+            el.summary.innerHTML = summaryParts.join('');
+
+            if (!report) {
+                el.tests.innerHTML = '<p class="muted">Ainda não existe relatório publicado para este ambiente.</p>';
+                return;
+            }
+
+            const rows = (report.tests || []).map((test) => {
+                const passed = (test.status ?? 'failed') === 'passed';
+                const badgeClass = passed ? 'pass' : 'fail';
+                const label = passed ? 'Passou' : 'Falhou';
+                const error = escapeHtml(test.error || 'Sem erro registrado');
+                return `
+                    <tr>
+                        <td><strong>${escapeHtml(test.title ?? 'Teste sem título')}</strong></td>
+                        <td><span class="badge ${badgeClass}">${label}</span></td>
+                        <td>${error}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const shots = (report.tests || []).flatMap((test) => (test.screenshots || []).map((shot) => {
+                if (!shot.src) {
+                    return '';
+                }
+
+                return `
+                    <div class="shot">
+                        <img src="${escapeHtml(shot.src)}" alt="${escapeHtml(shot.label ?? 'Screenshot')}">
+                        <div class="shot-meta">
+                            <p class="shot-title">${escapeHtml(shot.label ?? 'Screenshot')}</p>
+                            <div class="muted">${escapeHtml(shot.path ?? '')}</div>
+                        </div>
+                    </div>
+                `;
+            })).join('');
+
+            el.tests.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Teste</th>
+                            <th>Status</th>
+                            <th>Erro</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows || ''}</tbody>
+                </table>
+                ${shots ? `<h2 class="section-title" style="margin-top:18px;">Imagens</h2><div class="shots">${shots}</div>` : ''}
+            `;
+        };
+
+        const loadReport = async () => {
+            setLoading(true);
+            setFlash('');
+
+            try {
+                const payload = await fetchJson(endpoints.tests);
+                render(payload);
+            } catch (error) {
+                const payload = error.payload || null;
+                if (payload) {
+                    render(payload);
+                }
+                setFlash(`Falha ao carregar a API: ${escapeHtml(error.message)}`, 'failed');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const runTests = async () => {
+            setLoading(true);
+            setFlash('');
+
+            try {
+                const payload = await fetchJson(endpoints.run, {method: 'POST'});
+                render(payload);
+                setFlash(`Execução concluída com sucesso em ${escapeHtml(payload.runRequestedAt || '')}.`, 'success');
+            } catch (error) {
+                const payload = error.payload || null;
+                if (payload) {
+                    render(payload);
+                }
+
+                const message = payload?.run?.errorOutput || payload?.run?.output || error.message;
+                setFlash(`Execução falhou: ${escapeHtml(message)}`, 'failed');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        el.runButton.addEventListener('click', runTests);
+        el.reloadButton.addEventListener('click', loadReport);
+
+        loadReport();
+    </script>
 </body>
 </html>
 HTML;
 
+        $html = strtr($html, [
+            '__PAGE_TITLE__' => $this->e('Smoke Tests Playground'),
+            '__STATUS_CLASS__' => $this->e('idle'),
+            '__STATUS_LABEL__' => $this->e('Sem relatório'),
+        ]);
+
         return new Response($html);
     }
 
-    private function buildSummaryHtml(?array $report): string
+    #[Route(path: '/tests/run', name: 'smoke_tests_playground_run', methods: ['POST'])]
+    public function run(Request $request): JsonResponse
     {
-        if ($report === null) {
-            return '<p class="muted">Ainda não existe relatório publicado para este ambiente.</p>';
-        }
+        $runResult = $this->runner->run();
+        $payload = $this->buildPayload();
+        $payload['run'] = [
+            'successful' => $runResult->successful,
+            'exitCode' => $runResult->exitCode,
+            'output' => $runResult->output,
+            'errorOutput' => $runResult->errorOutput,
+        ];
+        $payload['runRequestedAt'] = (new \DateTimeImmutable())->format(DATE_ATOM);
+        $payload['requestedMethod'] = $request->getMethod();
+        $payload['statusCode'] = $runResult->successful ? 200 : 500;
 
-        $testsCount = count($report['tests'] ?? []);
-        $generatedAt = $report['generatedAt'] ?? null;
-        $suite = $report['suite'] ?? 'smoke-tests-playground';
-        $reportPath = $this->settings->reportPath();
-        $testsPath = $this->settings->testsPath();
-
-        return sprintf(
-            '<p><strong>Suite:</strong> %s</p><p><strong>Geração:</strong> %s</p><p><strong>Total:</strong> %d teste(s)</p><p class="muted"><strong>Tests path:</strong><br>%s</p><p class="muted"><strong>Report:</strong><br>%s</p>',
-            $this->e((string) $suite),
-            $this->e($generatedAt ? (string) $generatedAt : 'indisponível'),
-            $testsCount,
-            $this->e($testsPath),
-            $this->e($reportPath),
-        );
+        return $this->json($payload, $runResult->successful ? 200 : 500);
     }
 
-    private function buildTestsHtml(array $tests): string
+    private function buildPayload(): array
     {
-        if ($tests === []) {
-            return '<p class="muted">Nenhum teste encontrado no relatório atual.</p>';
-        }
+        $report = $this->reportReader->readLatest();
 
-        $rows = [];
-
-        foreach ($tests as $test) {
-            $status = ($test['status'] ?? 'failed') === 'passed' ? 'Passou' : 'Falhou';
-            $statusClass = ($test['status'] ?? 'failed') === 'passed' ? 'pass' : 'fail';
-            $error = trim((string) ($test['error'] ?? ''));
-            $error = $error !== '' ? $error : 'Sem erro registrado';
-
-            $rows[] = sprintf(
-                '<tr><td><strong>%s</strong></td><td><span class="badge %s">%s</span></td><td>%s</td></tr>',
-                $this->e((string) ($test['title'] ?? 'Teste sem título')),
-                $statusClass,
-                $status,
-                $this->e($error),
-            );
-        }
-
-        $html = '<table><thead><tr><th>Teste</th><th>Status</th><th>Erro</th></tr></thead><tbody>'.implode('', $rows).'</tbody></table>';
-
-        $shots = [];
-        foreach ($tests as $test) {
-            foreach (($test['screenshots'] ?? []) as $screenshot) {
-                $src = $screenshot['src'] ?? null;
-                if (!is_string($src) || $src === '') {
-                    continue;
-                }
-
-                $shots[] = sprintf(
-                    '<div class="shot"><img src="%s" alt="%s"><div class="shot-meta"><p class="shot-title">%s</p><div class="muted">%s</div></div></div>',
-                    $this->e($src),
-                    $this->e((string) ($screenshot['label'] ?? 'Screenshot')),
-                    $this->e((string) ($screenshot['label'] ?? 'Screenshot')),
-                    $this->e((string) ($screenshot['path'] ?? '')),
-                );
-            }
-        }
-
-        if ($shots !== []) {
-            $html .= '<h2 class="section-title" style="margin-top:18px;">Imagens</h2><div class="shots">'.implode('', $shots).'</div>';
-        }
-
-        return $html;
-    }
-
-    private function buildRunFeedback(?SmokeRunResult $runResult): string
-    {
-        if ($runResult === null) {
-            return '';
-        }
-
-        $statusClass = $runResult->successful ? 'success' : 'failed';
-        $title = $runResult->successful ? 'Execução concluída com sucesso.' : 'Execução falhou.';
-        $details = trim($runResult->output."\n".$runResult->errorOutput);
-        $detailsHtml = $details !== '' ? '<pre>'.$this->e($details).'</pre>' : '';
-
-        return sprintf(
-            '<div class="message %s">%s%s</div>',
-            $statusClass,
-            $this->e($title),
-            $detailsHtml,
-        );
-    }
-
-    private function e(string $value): string
-    {
-        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        return [
+            'status' => $report['status'] ?? 'idle',
+            'generatedAt' => $report['generatedAt'] ?? null,
+            'suite' => $report['suite'] ?? 'smoke-tests-playground',
+            'testsPath' => $this->settings->testsPath(),
+            'reportPath' => $this->settings->reportPath(),
+            'runCommand' => $this->settings->runCommand(),
+            'runWorkingDirectory' => $this->settings->runWorkingDirectory(),
+            'runTimeout' => $this->settings->runTimeout(),
+            'report' => $report,
+        ];
     }
 }

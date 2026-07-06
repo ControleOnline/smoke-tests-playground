@@ -1,6 +1,7 @@
 # Smoke Tests Playground
 
-Bundle Symfony para expor uma página de conferência do último smoke test e um botão para disparar uma nova execução.
+Bundle Symfony para expor uma API de conferência do último smoke test e um endpoint para disparar uma nova execução.
+A interface humana fica em `GET /tests/ui` e consome a API.
 
 ## Instalação
 
@@ -34,8 +35,34 @@ O comando cria:
 
 - `GET /tests`
 - `POST /tests/run`
+- `GET /tests/ui`
+
+## Respostas
+
+`GET /tests` devolve um JSON com:
+
+- `status`
+- `generatedAt`
+- `suite`
+- `testsPath`
+- `reportPath`
+- `runCommand`
+- `runWorkingDirectory`
+- `runTimeout`
+- `report`
+
+`POST /tests/run` executa o comando configurado, devolve o mesmo payload de `GET /tests` e adiciona:
+
+- `run.successful`
+- `run.exitCode`
+- `run.output`
+- `run.errorOutput`
+- `runRequestedAt`
+- `requestedMethod`
+
+`GET /tests/ui` entrega uma página HTML que consome `GET /tests` e `POST /tests/run` via `fetch`.
 
 ## Formato esperado do relatório
 
 O controller lê `report.json` dentro do diretório configurado em `SMOKE_TESTS_PLAYGROUND_TESTS_PATH`.
-As screenshots podem ser salvas como arquivos PNG relativos ao mesmo diretório, e a página embute as imagens no HTML para conferência rápida.
+As screenshots podem ser salvas como arquivos PNG relativos ao mesmo diretório, e a API embute as imagens no JSON como `src` em base64 para conferência rápida.
