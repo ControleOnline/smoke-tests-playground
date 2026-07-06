@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page_title }}</title>
+    {{ include('@SmokeTestsPlayground/smoke_tests_playground/_styles.html.twig') }}
+</head>
+<body>
+    <main
+        class="shell"
+        data-tests-endpoint="{{ tests_endpoint|e('html_attr') }}"
+        data-run-endpoint="{{ run_endpoint|e('html_attr') }}"
+        data-page-title="{{ page_title|e('html_attr') }}"
+        data-status-class="{{ status_class|e('html_attr') }}"
+        data-status-label="{{ status_label|e('html_attr') }}"
+    >
+        <section class="hero">
+            <div class="hero-row">
+                <div>
+                    <p class="eyebrow">Smoke tests playground</p>
+                    <h1>{{ page_heading }}</h1>
+                    <p class="subtitle">{{ page_subtitle }}</p>
+                </div>
+                <div id="status-pill" class="status-pill {{ status_class }}">{{ status_label }}</div>
+            </div>
+
+            <div id="flash-message" class="message warning" style="display:none;"></div>
+
+            <div class="controls">
+                <button id="run-button" class="button primary" type="button">Rodar novos testes</button>
+                <button id="reload-button" class="button secondary" type="button">Recarregar relatório</button>
+            </div>
+        </section>
+
+        <section class="grid">
+            <aside class="card summary">
+                <h2 class="section-title">Resumo</h2>
+                <div id="summary-content" class="muted">Carregando...</div>
+            </aside>
+
+            <article class="card content">
+                <h2 class="section-title">Testes registrados</h2>
+                <div id="tests-content" class="muted">Carregando...</div>
+            </article>
+        </section>
+    </main>
+
+    {{ include('@SmokeTestsPlayground/smoke_tests_playground/_scripts.html.twig') }}
+</body>
+</html>

@@ -1,7 +1,7 @@
 # Smoke Tests Playground
 
-Bundle Symfony para expor uma API de conferência do último smoke test e um endpoint para disparar uma nova execução.
-A interface humana fica em `GET /tests/ui` e consome a API.
+Bundle Symfony para expor a UI de conferência do último smoke test e os endpoints de API para consultar e disparar execuções.
+A interface humana fica em `GET /tests`, é renderizada por Twig e consome a API em `GET /tests/api` e `POST /tests/run`.
 
 ## Instalação
 
@@ -33,13 +33,14 @@ O comando cria:
 
 ## Rotas
 
-- `GET /tests`
-- `POST /tests/run`
-- `GET /tests/ui`
+- `GET /tests` - UI HTML
+- `GET /tests/api` - JSON com o relatório mais recente
+- `POST /tests/run` - JSON com a execução de um novo smoke
+- `GET /tests/ui` - alias da UI para compatibilidade
 
 ## Respostas
 
-`GET /tests` devolve um JSON com:
+`GET /tests/api` devolve um JSON com:
 
 - `status`
 - `generatedAt`
@@ -51,7 +52,7 @@ O comando cria:
 - `runTimeout`
 - `report`
 
-`POST /tests/run` executa o comando configurado, devolve o mesmo payload de `GET /tests` e adiciona:
+`POST /tests/run` executa o comando configurado, devolve o mesmo payload de `GET /tests/api` e adiciona:
 
 - `run.successful`
 - `run.exitCode`
@@ -60,7 +61,14 @@ O comando cria:
 - `runRequestedAt`
 - `requestedMethod`
 
-`GET /tests/ui` entrega uma página HTML que consome `GET /tests` e `POST /tests/run` via `fetch`.
+`GET /tests` entrega uma página HTML renderizada por Twig que consome `GET /tests/api` e `POST /tests/run` via `fetch`.
+
+## Estrutura
+
+- `src/Controller/SmokeTestsController.php` mantém só as rotas
+- `src/Service/SmokeTestsPayloadFactory.php` monta os payloads JSON
+- `src/Service/SmokeTestsPageRenderer.php` e `src/Service/SmokeTestsPageContextFactory.php` cuidam da UI
+- `templates/smoke_tests_playground/` contém o HTML, os estilos e o JavaScript separados
 
 ## Formato esperado do relatório
 

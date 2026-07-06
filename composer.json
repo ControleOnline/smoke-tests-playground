@@ -9,15 +9,16 @@
       "email": "ti@controleonline.com"
     }
   ],
-  "require": {
-    "php": "^8.2",
-    "symfony/config": "^7.1",
-    "symfony/console": "^7.1",
-    "symfony/dependency-injection": "^7.1",
-    "symfony/framework-bundle": "^7.1",
-    "symfony/process": "^7.1",
-    "symfony/yaml": "^7.1"
-  },
+    "require": {
+        "php": "^8.2",
+        "symfony/config": "^7.1",
+        "symfony/console": "^7.1",
+        "symfony/dependency-injection": "^7.1",
+        "symfony/framework-bundle": "^7.1",
+        "symfony/process": "^7.1",
+        "symfony/twig-bundle": "^7.1",
+        "symfony/yaml": "^7.1"
+    },
   "autoload": {
     "psr-4": {
       "ControleOnline\\SmokeTestsPlayground\\": "src/"
