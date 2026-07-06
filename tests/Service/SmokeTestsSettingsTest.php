@@ -14,8 +14,15 @@ final class SmokeTestsSettingsTest extends TestCase
         $settings = new SmokeTestsSettings('/app');
 
         self::assertSame(
-            './node_modules/.bin/playwright test --config=playwright.config.cjs tests/browser/transporter-login.spec.js',
+            'PLAYWRIGHT_BROWSERS_PATH=0 ./node_modules/.bin/playwright test --config=playwright.config.cjs tests/browser/transporter-login.spec.js',
             $settings->runCommand(),
         );
+    }
+
+    public function testDefaultEnvLinesIncludeLocalBrowserPath(): void
+    {
+        $settings = new SmokeTestsSettings('/app');
+
+        self::assertContains('PLAYWRIGHT_BROWSERS_PATH="0"', $settings->defaultEnvLines());
     }
 }

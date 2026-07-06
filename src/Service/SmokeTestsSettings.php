@@ -28,8 +28,8 @@ final class SmokeTestsSettings
     {
         return $this->env(
             'SMOKE_TESTS_PLAYGROUND_RUN_COMMAND',
-            './node_modules/.bin/playwright test --config=playwright.config.cjs tests/browser/transporter-login.spec.js',
-        ) ?? './node_modules/.bin/playwright test --config=playwright.config.cjs tests/browser/transporter-login.spec.js';
+            'PLAYWRIGHT_BROWSERS_PATH=0 ./node_modules/.bin/playwright test --config=playwright.config.cjs tests/browser/transporter-login.spec.js',
+        ) ?? 'PLAYWRIGHT_BROWSERS_PATH=0 ./node_modules/.bin/playwright test --config=playwright.config.cjs tests/browser/transporter-login.spec.js';
     }
 
     public function runWorkingDirectory(): string
@@ -48,6 +48,7 @@ final class SmokeTestsSettings
     public function defaultEnvLines(): array
     {
         return [
+            $this->formatEnvLine('PLAYWRIGHT_BROWSERS_PATH', '0'),
             $this->formatEnvLine('SMOKE_TESTS_PLAYGROUND_TESTS_PATH', $this->defaultTestsPathValue()),
             $this->formatEnvLine('SMOKE_TESTS_PLAYGROUND_RUN_COMMAND', $this->runCommand()),
             $this->formatEnvLine('SMOKE_TESTS_PLAYGROUND_RUN_WORKDIR', $this->defaultRunWorkingDirectoryValue()),

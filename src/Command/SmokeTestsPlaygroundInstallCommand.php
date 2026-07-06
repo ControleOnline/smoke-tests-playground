@@ -43,12 +43,11 @@ final class SmokeTestsPlaygroundInstallCommand extends Command
         $header = [
             '# Smoke Tests Playground',
             '# Configuração padrão instalada pelo pacote controleonline/smoke-tests-playground.',
-            '# Antes de usar o runner, o projeto consumidor precisa instalar o Playwright localmente e gerar os browsers.',
-            '# O projeto consumidor precisa ter o Playwright instalado localmente em node_modules/.bin.',
+            '# Antes de usar o runner, o projeto consumidor precisa instalar o Playwright localmente e gerar os browsers com o mesmo usuário que executa o app.',
         ];
 
         $lines = array_merge($header, $this->settings->defaultEnvLines(), ['']);
-        $this->appendUniqueLines($path, $lines);
+        $this->writeEnvLines($path, $lines);
     }
 
     private function writeRoutesConfig(string $path): void
@@ -76,17 +75,48 @@ YAML;
         $this->writeFileIfNeeded($path, $content);
     }
 
-    private function appendUniqueLines(string $path, array $lines): void
+    private function writeEnvLines(string $path, array $lines): void
     {
         $existing = is_file($path) ? file($path, FILE_IGNORE_NEW_LINES) : [];
         $existing = $existing === false ? [] : $existing;
-        $existingMap = array_fill_keys($existing, true);
-
-        $merged = $existing;
+        $newValues = [];
         foreach ($lines as $line) {
-            if (!isset($existingMap[$line])) {
+            if (preg_match('/^([A-Z0-9_]+)=/', $line, $matches) === 1) {
+                $newValues[$matches[1]] = $line;
+            }
+        }
+
+        $merged = [];
+        $seenKeys = [];
+
+        foreach ($existing as $line) {
+            if (preg_match('/^([A-Z0-9_]+)=/', $line, $matches) === 1) {
+                $key = $matches[1];
+                if (isset($newValues[$key])) {
+                    if (!isset($seenKeys[$key])) {
+                        $merged[] = $newValues[$key];
+                        $seenKeys[$key] = true;
+                    }
+                    continue;
+                }
+            }
+
+            $merged[] = $line;
+        }
+
+        foreach ($lines as $line) {
+            if (preg_match('/^([A-Z0-9_]+)=/', $line, $matches) !== 1) {
+                if (!in_array($line, $merged, true)) {
+                    $merged[] = $line;
+                }
+
+                continue;
+            }
+
+            $key = $matches[1];
+            if (!isset($seenKeys[$key])) {
                 $merged[] = $line;
-                $existingMap[$line] = true;
+                $seenKeys[$key] = true;
             }
         }
 
