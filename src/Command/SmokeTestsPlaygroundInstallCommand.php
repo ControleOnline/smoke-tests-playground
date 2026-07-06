@@ -43,6 +43,8 @@ final class SmokeTestsPlaygroundInstallCommand extends Command
         $header = [
             '# Smoke Tests Playground',
             '# Configuração padrão instalada pelo pacote controleonline/smoke-tests-playground.',
+            '# Antes de usar o runner, o projeto consumidor precisa instalar o Playwright localmente e gerar os browsers.',
+            '# O projeto consumidor precisa ter o Playwright instalado localmente em node_modules/.bin.',
         ];
 
         $lines = array_merge($header, $this->settings->defaultEnvLines(), ['']);

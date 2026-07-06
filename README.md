@@ -5,14 +5,35 @@ A interface humana fica em `GET /tests`, é renderizada por Twig e consome a API
 
 ## Instalação
 
-1. Instale o pacote com Composer.
-2. Registre o bundle no `config/bundles.php` do projeto consumidor:
+1. Se o servidor ainda não tiver Node.js, instale o `nvm` e carregue a sessão:
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+source ~/.bashrc
+```
+
+2. Instale uma versão do Node.js e carregue o ambiente:
+
+```bash
+nvm install --lts
+nvm use --lts
+```
+
+3. Instale o Playwright no projeto consumidor e gere os browsers:
+
+```bash
+npm install -D @playwright/test
+npx playwright install
+```
+
+4. Instale o pacote com Composer.
+5. Registre o bundle no `config/bundles.php` do projeto consumidor:
 
 ```php
 ControleOnline\SmokeTestsPlayground\SmokeTestsPlaygroundBundle::class => ['all' => true],
 ```
 
-3. Execute o comando de bootstrap:
+6. Execute o comando de bootstrap:
 
 ```bash
 php bin/console smoke-tests-playground:install
@@ -27,9 +48,17 @@ O comando cria:
 ## Variáveis de ambiente
 
 - `SMOKE_TESTS_PLAYGROUND_TESTS_PATH`: diretório onde ficam os artifacts e o `report.json`
-- `SMOKE_TESTS_PLAYGROUND_RUN_COMMAND`: comando usado pelo botão "Rodar novos testes"
+- `SMOKE_TESTS_PLAYGROUND_RUN_COMMAND`: comando usado pelo botão "Rodar novos testes" e pelo endpoint `POST /tests/run`
 - `SMOKE_TESTS_PLAYGROUND_RUN_WORKDIR`: diretório de execução do comando
 - `SMOKE_TESTS_PLAYGROUND_RUN_TIMEOUT`: timeout em segundos
+
+O comando padrão assume Playwright instalado localmente no projeto consumidor:
+
+```bash
+./node_modules/.bin/playwright test --config=playwright.config.cjs tests/browser/transporter-login.spec.js
+```
+
+Se o projeto ainda preferir `npx`, ajuste `SMOKE_TESTS_PLAYGROUND_RUN_COMMAND` no `.env.local`.
 
 ## Rotas
 
