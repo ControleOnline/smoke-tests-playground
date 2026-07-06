@@ -1,7 +1,7 @@
 {
   "name": "controleonline/smoke-tests-playground",
-  "description": "Playground for browser smoke tests and release validation in ControleOnline projects.",
-  "type": "library",
+  "description": "Symfony bundle for showing the latest browser smoke test report and running new checks in ControleOnline projects.",
+  "type": "symfony-bundle",
   "license": "MIT",
   "authors": [
     {
@@ -10,7 +10,13 @@
     }
   ],
   "require": {
-    "php": "^8.2"
+    "php": "^8.2",
+    "symfony/config": "^7.1",
+    "symfony/console": "^7.1",
+    "symfony/dependency-injection": "^7.1",
+    "symfony/framework-bundle": "^7.1",
+    "symfony/process": "^7.1",
+    "symfony/yaml": "^7.1"
   },
   "autoload": {
     "psr-4": {

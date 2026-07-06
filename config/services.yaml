@@ -1,0 +1,13 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    ControleOnline\SmokeTestsPlayground\:
+        resource: '../src/'
+        exclude: '../src/{DependencyInjection,Resources,SmokeTestsPlaygroundBundle.php}'
+
+    ControleOnline\SmokeTestsPlayground\Service\SmokeTestsSettings:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
