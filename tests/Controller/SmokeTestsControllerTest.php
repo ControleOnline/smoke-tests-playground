@@ -10,39 +10,125 @@ use Symfony\Component\HttpFoundation\Request;
 
 final class SmokeTestsControllerTest extends KernelTestCase
 {
+    private string $projectDir;
+
     protected static function getKernelClass(): string
     {
         return TestKernel::class;
     }
 
-    public function testIndexRendersTwigPage(): void
+    protected function setUp(): void
     {
-        self::bootKernel();
-
-        $response = self::getContainer()->get('http_kernel')->handle(Request::create('/tests'));
-
-        self::assertSame(200, $response->getStatusCode());
-        self::assertStringContainsString('Smoke tests playground', (string) $response->getContent());
-        self::assertStringContainsString('data-tests-endpoint="&#x2F;tests&#x2F;api"', (string) $response->getContent());
+        parent::setUp();
+        self::ensureKernelShutdown();
+        $this->projectDir = $this->makeProjectDir();
+        $_ENV['SMOKE_TESTS_PLAYGROUND_TESTS_PATH'] = $this->projectDir.'/var/tests/browser-smoke';
+        putenv('SMOKE_TESTS_PLAYGROUND_TESTS_PATH='.$_ENV['SMOKE_TESTS_PLAYGROUND_TESTS_PATH']);
     }
 
-    public function testApiReturnsOnlyPublicFields(): void
+    protected function tearDown(): void
     {
+        self::ensureKernelShutdown();
+        unset($_ENV['SMOKE_TESTS_PLAYGROUND_TESTS_PATH']);
+        putenv('SMOKE_TESTS_PLAYGROUND_TESTS_PATH');
+    }
+
+    public function testIndexEndpointsReturnTheSameJsonPayload(): void
+    {
+        $this->writeReport('transporter-login', [
+            'generatedAt' => '2026-07-06T17:42:40.016Z',
+            'suite' => 'transporter-login',
+            'tests' => [
+                [
+                    'title' => 'faz login e chega em listwinner com prints em /tests',
+                    'status' => 'passed',
+                    'error' => null,
+                    'screenshots' => [
+                        [
+                            'label' => 'Tela de login',
+                            'path' => '01-login-screen.png',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+        $this->writePng('transporter-login', '01-login-screen.png');
+
         self::bootKernel();
 
-        $response = self::getContainer()->get('http_kernel')->handle(Request::create('/tests/api'));
+        $httpKernel = self::getContainer()->get('http_kernel');
+        $response = $httpKernel->handle(Request::create('/tests'));
+        $indexJsonResponse = $httpKernel->handle(Request::create('/tests/index.json'));
+        $apiResponse = $httpKernel->handle(Request::create('/tests/api'));
 
         self::assertSame(200, $response->getStatusCode());
-        self::assertStringContainsString('application/json', (string) $response->headers->get('content-type'));
+        self::assertSame('application/json', $response->headers->get('content-type'));
+        self::assertSame($response->getContent(), $indexJsonResponse->getContent());
+        self::assertSame($response->getContent(), $apiResponse->getContent());
 
         $payload = json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR);
 
-        self::assertSame(['status', 'progress', 'message', 'lastRunAt', 'summary', 'tests'], array_keys($payload));
-        self::assertArrayNotHasKey('testsPath', $payload);
-        self::assertArrayNotHasKey('reportPath', $payload);
-        self::assertArrayNotHasKey('runCommand', $payload);
-        self::assertArrayNotHasKey('runWorkingDirectory', $payload);
-        self::assertArrayNotHasKey('runTimeout', $payload);
-        self::assertArrayNotHasKey('report', $payload);
+        self::assertSame('passed', $payload['status']);
+        self::assertSame(100, $payload['progress']);
+        self::assertSame(['total' => 1, 'passed' => 1, 'failed' => 0], $payload['summary']['suites']);
+        self::assertSame(['total' => 1, 'passed' => 1, 'failed' => 0], $payload['summary']['tests']);
+        self::assertCount(1, $payload['suites']);
+        self::assertSame('transporter-login', $payload['suites'][0]['suite']);
+        self::assertSame('/tests/artifacts/transporter-login/01-login-screen.png', $payload['suites'][0]['tests'][0]['screenshots'][0]['url']);
+        self::assertArrayNotHasKey('path', $payload['suites'][0]['tests'][0]['screenshots'][0]);
+    }
+
+    public function testArtifactRouteReturnsTheFileContents(): void
+    {
+        $this->writeReport('transporter-login', [
+            'generatedAt' => '2026-07-06T17:42:40.016Z',
+            'suite' => 'transporter-login',
+            'tests' => [],
+        ]);
+        $this->writePng('transporter-login', '01-login-screen.png');
+
+        self::bootKernel();
+
+        $response = self::getContainer()->get('http_kernel')->handle(
+            Request::create('/tests/artifacts/transporter-login/01-login-screen.png'),
+        );
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('image/png', $response->headers->get('content-type'));
+        self::assertStringContainsString('inline', (string) $response->headers->get('content-disposition'));
+    }
+
+    private function makeProjectDir(): string
+    {
+        $projectDir = sys_get_temp_dir().'/smoke-controller-'.bin2hex(random_bytes(6));
+        mkdir($projectDir.'/var/tests/browser-smoke', 0777, true);
+
+        return $projectDir;
+    }
+
+    /**
+     * @param array<string, mixed> $report
+     */
+    private function writeReport(string $suite, array $report): void
+    {
+        $suiteDir = $this->projectDir.'/var/tests/browser-smoke/'.$suite;
+        if (!is_dir($suiteDir)) {
+            mkdir($suiteDir, 0777, true);
+        }
+
+        file_put_contents(
+            $suiteDir.'/report.json',
+            json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
+        );
+    }
+
+    private function writePng(string $suite, string $relativePath): void
+    {
+        $suiteDir = $this->projectDir.'/var/tests/browser-smoke/'.$suite;
+        $filePath = $suiteDir.'/'.$relativePath;
+        if (!is_dir(dirname($filePath))) {
+            mkdir(dirname($filePath), 0777, true);
+        }
+        file_put_contents($filePath, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO2P5foAAAAASUVORK5CYII='));
     }
 }

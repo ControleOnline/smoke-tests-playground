@@ -14,7 +14,7 @@ final class SmokeTestsSettingsTest extends TestCase
         $settings = new SmokeTestsSettings('/app');
 
         self::assertSame(
-            'node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/company-advertiser-route-smoke.spec.js',
+            'node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/*.spec.js',
             $settings->runCommand(),
         );
     }
@@ -24,5 +24,6 @@ final class SmokeTestsSettingsTest extends TestCase
         $settings = new SmokeTestsSettings('/app');
 
         self::assertContains('PLAYWRIGHT_BROWSERS_PATH="0"', $settings->defaultEnvLines());
+        self::assertContains('SMOKE_TESTS_PLAYGROUND_TESTS_PATH="var/tests/browser-smoke"', $settings->defaultEnvLines());
     }
 }

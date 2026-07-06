@@ -1,127 +1,180 @@
 # Smoke Tests Playground
 
-Bundle Symfony para expor a UI de conferência do último smoke test e os endpoints de API para consultar e disparar execuções.
-A interface humana fica em `GET /tests`, é renderizada por Twig e consome a API em `GET /tests/api` e `POST /tests/run`.
+Bundle Symfony para expor os smoke tests browser como API JSON.
+
+O pacote não renderiza UI HTML. A leitura pública acontece por:
+
+- `GET /tests`
+- `GET /tests/index.json`
+- `GET /tests/api`
+
+Os artifacts publicados pelos smoke tests ficam disponíveis por:
+
+- `GET /tests/artifacts/{suite}/{arquivo}`
+
+O frontend separado em `tests-frontend-tool` consome essa API com `X-API-KEY`.
+
+## O que o Playwright publica
+
+Cada suite continua gravando em:
+
+- `var/tests/browser-smoke/<suite>/report.json`
+- `var/tests/browser-smoke/<suite>/*.png`
+- `var/tests/browser-smoke/<suite>/*/*.png`
+
+O `report.json` fica por suite. O bundle varre todas as suites e monta um `index.json` agregado com:
+
+- status geral
+- progresso geral
+- resumo de suites e testes
+- lista de suites
+- testes de cada suite
+- etapas de cada teste
+- prints com URLs autenticadas
 
 ## Instalação
 
-1. Se o servidor ainda não tiver Node.js, instale o `nvm` e carregue a sessão:
+1. Instale o Node.js com `nvm` no servidor, se ainda não existir:
 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 source ~/.bashrc
-```
-
-2. Instale uma versão do Node.js e carregue o ambiente:
-
-```bash
 nvm install --lts
 nvm use --lts
 ```
 
-3. Instale o Playwright no projeto consumidor. O bootstrap do pacote tenta baixar os browsers sozinho, mas este comando continua útil para reinstalação manual:
+2. No projeto consumidor, instale o Playwright e os browsers com o mesmo usuário que executa o app:
 
 ```bash
 npm install -D @playwright/test
 npm run test:browser:install
 ```
 
-4. Instale o pacote com Composer.
-5. Registre o bundle no `config/bundles.php` do projeto consumidor:
+3. Instale o pacote com Composer.
+4. Registre o bundle em `config/bundles.php`:
 
 ```php
 ControleOnline\SmokeTestsPlayground\SmokeTestsPlaygroundBundle::class => ['all' => true],
 ```
 
-6. Execute o comando de bootstrap:
+5. Rode o bootstrap do pacote:
 
 ```bash
 php bin/console smoke-tests-playground:install
 ```
 
-Se houver problema de permissão, o próprio comando imprime os comandos que precisam ser executados como `root`.
-
-O comando cria:
+O instalador escreve:
 
 - `.env` com os defaults do smoke
 - `config/routes/smoke_tests_playground.yaml`
 - `config/services/smoke_tests_playground.yaml`
 
+Se a instalação dos browsers falhar por permissão, o comando imprime instruções para executar como `root`.
+
 ## Variáveis de ambiente
 
-- `SMOKE_TESTS_PLAYGROUND_TESTS_PATH`: diretório onde ficam os artifacts e o `report.json`
-- `SMOKE_TESTS_PLAYGROUND_RUN_COMMAND`: comando usado pelo botão "Rodar novos testes" e pelo endpoint `POST /tests/run`
-- `SMOKE_TESTS_PLAYGROUND_RUN_WORKDIR`: diretório de execução do comando
-- `SMOKE_TESTS_PLAYGROUND_RUN_TIMEOUT`: timeout em segundos
-
-O comando padrão assume Playwright instalado localmente no projeto consumidor:
+- `PLAYWRIGHT_BROWSERS_PATH="0"` evita depender do cache global do usuário.
+- `SMOKE_TESTS_PLAYGROUND_TESTS_PATH` aponta para a raiz dos smoke tests, por padrão `var/tests/browser-smoke`.
+- `SMOKE_TESTS_PLAYGROUND_RUN_COMMAND` define o comando do runner, por padrão:
 
 ```bash
-node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/company-advertiser-route-smoke.spec.js
+node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/*.spec.js
 ```
 
-Se precisar sobrescrever o comando, mantenha `PLAYWRIGHT_BROWSERS_PATH="0"` separado no ambiente. O runner da lib usa `node node_modules/@playwright/test/cli.js` e não depende de prefixo inline no comando.
+- `SMOKE_TESTS_PLAYGROUND_RUN_WORKDIR` define o diretório de execução.
+- `SMOKE_TESTS_PLAYGROUND_RUN_TIMEOUT` define o timeout em segundos.
 
 ## Rotas
 
-- `GET /tests` - UI HTML
-- `GET /tests/api` - JSON público com status, progresso e mensagem
-- `POST /tests/run` - JSON público com o resultado da execução
-- `GET /tests/ui` - alias da UI para compatibilidade
+- `GET /tests` retorna o mesmo JSON de `GET /tests/index.json`
+- `GET /tests/index.json` retorna o índice agregado
+- `GET /tests/api` retorna o mesmo JSON para compatibilidade
+- `GET /tests/artifacts/{suite}/{arquivo}` entrega os artifacts publicados
+- `POST /tests/run` continua disponível para disparar o runner do backend
 
-## Respostas
+## Contrato do índice
 
-`GET /tests/api` devolve um JSON público com:
+O índice público tem a estrutura geral:
 
+```json
+{
+  "generatedAt": "2026-07-06T18:51:19.924Z",
+  "status": "failed",
+  "progress": 50,
+  "message": "1 suite com falha em 2 publicadas.",
+  "lastRunAt": "2026-07-06T18:51:19.924Z",
+  "summary": {
+    "suites": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1
+    },
+    "tests": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1
+    }
+  },
+  "suites": []
+}
+```
+
+Cada suite publica:
+
+- `suite`
+- `displayName`
+- `generatedAt`
+- `updatedAt`
 - `status`
-- `progress`
-- `message`
-- `lastRunAt`
-- `summary.total`
-- `summary.passed`
-- `summary.failed`
-- `tests[]` com nome, status, erro e prints sanitizados
+- `summary`
+- `tests[]`
+- `links.report`
 
-`POST /tests/run` executa o comando configurado, devolve o mesmo payload de `GET /tests/api` e adiciona:
+Cada screenshot publica:
 
-- `run.successful`
-- `run.message`
-- `run.requestedAt`
-- `requestedMethod`
+- `label`
+- `name`
+- `url`
+- `mimeType`
+- `kind`
+- `available`
 
-`GET /tests` entrega uma página HTML renderizada por Twig que consome `GET /tests/api` e `POST /tests/run` via `fetch`.
-A tela mostra o status geral, a lista de testes e os prints de cada caso publicado no último relatório.
+## Frontend separado
 
-## Estrutura
+O projeto `tests-frontend-tool` consome a API via `.env`:
 
-- `src/Controller/SmokeTestsController.php` mantém só as rotas
-- `src/Service/SmokeTestsPublicStateFactory.php` monta os payloads públicos JSON
-- `src/Service/SmokeTestsPageRenderer.php` e `src/Service/SmokeTestsPageContextFactory.php` cuidam da UI
-- `templates/smoke_tests_playground/` contém o HTML, os estilos e o JavaScript separados
+```bash
+VITE_API_BASE_URL=https://staging.frethical.com
+VITE_API_KEY=<api-key>
+```
 
-## Formato esperado do relatório
-
-O controller lê `report.json` dentro do diretório configurado em `SMOKE_TESTS_PLAYGROUND_TESTS_PATH`, mas o dado bruto não é exposto na API pública.
-O relatório continua sendo o arquivo interno usado para calcular o status público da tela.
+Ele não executa smoke tests. Ele só lê `index.json`, mostra suites/tests/etapas e faz preview dos artifacts.
 
 ## Conferência manual
 
-Depois de instalar o pacote no projeto consumidor e publicar a UI, valide o smoke run com um comando simples.
-
-`GET /tests/api` consulta o último estado público:
+Exemplo de leitura do índice:
 
 ```bash
-curl -u "<basic-auth-user>:<basic-auth-pass>" \
-  -H "Accept: application/json" \
-  "https://<your-host>/tests/api"
+curl -H "Accept: application/json" \
+  -H "X-API-KEY: <api-key>" \
+  "https://<your-host>/tests/index.json"
 ```
 
-`POST /tests/run` dispara uma nova execução e devolve JSON com o resultado:
+Exemplo de artifact:
 
 ```bash
-curl -u "<basic-auth-user>:<basic-auth-pass>" \
-  -X POST "https://<your-host>/tests/run" \
-  -H "Accept: application/json"
+curl -H "X-API-KEY: <api-key>" \
+  "https://<your-host>/tests/artifacts/transporter-login/01-login-screen.png" \
+  --output login-screen.png
 ```
 
-Se estiver usando `cmd.exe` no Windows, substitua as barras invertidas por `^` no fim das linhas.
+## Testes
+
+O pacote tem testes para:
+
+- índice vazio
+- múltiplas suites
+- JSON inválido
+- resposta de run
+- entrega de artifacts
+

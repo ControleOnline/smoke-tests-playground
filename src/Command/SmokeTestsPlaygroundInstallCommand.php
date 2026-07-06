@@ -56,6 +56,7 @@ final class SmokeTestsPlaygroundInstallCommand extends Command
         $header = [
             '# Smoke Tests Playground',
             '# Configuração padrão instalada pelo pacote controleonline/smoke-tests-playground.',
+            '# O playground expõe JSON em /tests e /tests/index.json, e os prints ficam em /tests/artifacts.',
             '# Antes de usar o runner, o projeto consumidor precisa instalar o Playwright localmente e gerar os browsers com o mesmo usuário que executa o app.',
         ];
 
@@ -91,11 +92,11 @@ YAML;
     private function writeRootInstructions(OutputInterface $output, string $projectDir): void
     {
         $output->writeln('');
-        $output->writeln('<comment>Comandos para executar como root, se houver problema de permissão:</comment>');
+        $output->writeln('<comment>Comandos para executar como root, se houver problema de permissão ou cache de browser:</comment>');
         $output->writeln(sprintf('<comment>chown -R staging:staging %s</comment>', escapeshellarg($projectDir)));
         $output->writeln(sprintf(
             '<comment>su - staging -c %s</comment>',
-            escapeshellarg('cd '.$projectDir.' && npm run test:browser:install'),
+            escapeshellarg('cd '.$projectDir.' && source ~/.bashrc && nvm use --lts && npm run test:browser:install'),
         ));
         $output->writeln(sprintf(
             '<comment>su - staging -c %s</comment>',

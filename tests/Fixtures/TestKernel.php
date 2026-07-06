@@ -7,7 +7,6 @@ namespace ControleOnline\SmokeTestsPlayground\Tests\Fixtures;
 use ControleOnline\SmokeTestsPlayground\SmokeTestsPlaygroundBundle;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
-use Symfony\Bundle\TwigBundle\TwigBundle;
 use Symfony\Component\Config\Loader\LoaderInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpKernel\Kernel;
@@ -20,7 +19,6 @@ final class TestKernel extends Kernel
     public function registerBundles(): iterable
     {
         yield new FrameworkBundle();
-        yield new TwigBundle();
         yield new SmokeTestsPlaygroundBundle();
     }
 
@@ -30,10 +28,6 @@ final class TestKernel extends Kernel
             'secret' => 'test',
             'test' => true,
             'csrf_protection' => false,
-        ]);
-
-        $container->loadFromExtension('twig', [
-            'strict_variables' => true,
         ]);
     }
 

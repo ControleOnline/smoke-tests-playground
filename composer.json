@@ -1,6 +1,6 @@
 {
   "name": "controleonline/smoke-tests-playground",
-  "description": "Symfony bundle for showing the latest browser smoke test report and running new checks in ControleOnline projects.",
+  "description": "Symfony bundle for exposing browser smoke test indexes and artifacts as JSON APIs in ControleOnline projects.",
   "type": "symfony-bundle",
   "license": "MIT",
   "authors": [
@@ -16,7 +16,6 @@
     "symfony/dependency-injection": "^7.1",
     "symfony/framework-bundle": "^7.1",
     "symfony/process": "^7.1",
-    "symfony/twig-bundle": "^7.1",
     "symfony/yaml": "^7.1"
   },
   "autoload": {

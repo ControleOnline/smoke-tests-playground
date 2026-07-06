@@ -15,21 +15,34 @@ final class SmokeTestsSettings
     {
         return $this->normalizePath($this->env(
             'SMOKE_TESTS_PLAYGROUND_TESTS_PATH',
-            $this->projectDir.'/var/tests/browser-smoke/company-advertiser-route',
-        ) ?? $this->projectDir.'/var/tests/browser-smoke/company-advertiser-route');
+            $this->projectDir.'/var/tests/browser-smoke',
+        ) ?? $this->projectDir.'/var/tests/browser-smoke');
     }
 
+    public function indexPath(): string
+    {
+        return rtrim($this->testsPath(), '/\\').DIRECTORY_SEPARATOR.'index.json';
+    }
+
+    /**
+     * @deprecated Kept for compatibility with older callers.
+     */
     public function reportPath(): string
     {
-        return rtrim($this->testsPath(), '/\\').DIRECTORY_SEPARATOR.'report.json';
+        return $this->indexPath();
+    }
+
+    public function suiteReportPath(string $suite): string
+    {
+        return rtrim($this->testsPath(), '/\\').DIRECTORY_SEPARATOR.$suite.DIRECTORY_SEPARATOR.'report.json';
     }
 
     public function runCommand(): string
     {
         return $this->env(
             'SMOKE_TESTS_PLAYGROUND_RUN_COMMAND',
-            'node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/company-advertiser-route-smoke.spec.js',
-        ) ?? 'node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/company-advertiser-route-smoke.spec.js';
+            'node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/*.spec.js',
+        ) ?? 'node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/*.spec.js';
     }
 
     public function runWorkingDirectory(): string
@@ -58,7 +71,7 @@ final class SmokeTestsSettings
 
     public function defaultTestsPathValue(): string
     {
-        return 'var/tests/browser-smoke/company-advertiser-route';
+        return 'var/tests/browser-smoke';
     }
 
     public function defaultRunWorkingDirectoryValue(): string

@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace ControleOnline\SmokeTestsPlayground\Controller;
 
+use ControleOnline\SmokeTestsPlayground\Service\SmokeArtifactResponseFactory;
+use ControleOnline\SmokeTestsPlayground\Service\SmokeRunResponseFactory;
 use ControleOnline\SmokeTestsPlayground\Service\SmokeRunner;
-use ControleOnline\SmokeTestsPlayground\Service\SmokeTestsPageRenderer;
-use ControleOnline\SmokeTestsPlayground\Service\SmokeTestsPublicStateFactory;
+use ControleOnline\SmokeTestsPlayground\Service\SmokeTestsIndexFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,35 +17,56 @@ use Symfony\Component\Routing\Attribute\Route;
 final class SmokeTestsController extends AbstractController
 {
     public function __construct(
-        private readonly SmokeTestsPageRenderer $pageRenderer,
-        private readonly SmokeTestsPublicStateFactory $publicStateFactory,
+        private readonly SmokeTestsIndexFactory $indexFactory,
+        private readonly SmokeArtifactResponseFactory $artifactResponseFactory,
+        private readonly SmokeRunResponseFactory $runResponseFactory,
         private readonly SmokeRunner $runner,
     ) {
     }
 
     #[Route(path: '/tests', name: 'smoke_tests_playground_index', methods: ['GET'])]
-    public function index(): Response
+    public function index(): JsonResponse
     {
-        return $this->pageRenderer->render();
+        return $this->json($this->indexFactory->create());
     }
 
     #[Route(path: '/tests/ui', name: 'smoke_tests_playground_ui', methods: ['GET'])]
-    public function ui(): Response
+    public function ui(): JsonResponse
     {
-        return $this->pageRenderer->render();
+        return $this->json($this->indexFactory->create());
+    }
+
+    #[Route(path: '/tests/index.json', name: 'smoke_tests_playground_index_json', methods: ['GET'])]
+    public function indexJson(): JsonResponse
+    {
+        return $this->json($this->indexFactory->create());
     }
 
     #[Route(path: '/tests/api', name: 'smoke_tests_playground_api', methods: ['GET'])]
     public function api(): JsonResponse
     {
-        return $this->json($this->publicStateFactory->create());
+        return $this->json($this->indexFactory->create());
+    }
+
+    #[Route(
+        path: '/tests/artifacts/{suite}/{artifactPath}',
+        name: 'smoke_tests_playground_artifact',
+        methods: ['GET'],
+        requirements: [
+            'suite' => '[^/]+',
+            'artifactPath' => '.+',
+        ],
+    )]
+    public function artifact(string $suite, string $artifactPath): Response
+    {
+        return $this->artifactResponseFactory->create($suite, $artifactPath);
     }
 
     #[Route(path: '/tests/run', name: 'smoke_tests_playground_run', methods: ['POST'])]
     public function run(Request $request): JsonResponse
     {
         $runResult = $this->runner->run();
-        $payload = $this->publicStateFactory->createRunResponse(
+        $payload = $this->runResponseFactory->create(
             $runResult,
             $request->getMethod(),
             (new \DateTimeImmutable())->format(DATE_ATOM),
