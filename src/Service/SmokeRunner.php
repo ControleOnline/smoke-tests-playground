@@ -10,13 +10,14 @@ final class SmokeRunner
 {
     public function __construct(
         private readonly SmokeTestsSettings $settings,
+        private readonly SmokeCommandResolver $commandResolver,
     ) {
     }
 
     public function run(): SmokeRunResult
     {
-        $process = Process::fromShellCommandline(
-            $this->settings->runCommand(),
+        $process = new Process(
+            $this->commandResolver->toProcessArguments($this->settings->runCommand()),
             $this->settings->runWorkingDirectory(),
             null,
             null,

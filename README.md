@@ -23,7 +23,7 @@ nvm use --lts
 
 ```bash
 npm install -D @playwright/test
-PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium
+npm run test:browser:install
 ```
 
 4. Instale o pacote com Composer.
@@ -55,10 +55,10 @@ O comando cria:
 O comando padrão assume Playwright instalado localmente no projeto consumidor:
 
 ```bash
-PLAYWRIGHT_BROWSERS_PATH=0 ./node_modules/.bin/playwright test --config=playwright.config.cjs tests/browser/transporter-login.spec.js
+node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/transporter-login.spec.js
 ```
 
-Se o projeto ainda preferir `npx`, ajuste `SMOKE_TESTS_PLAYGROUND_RUN_COMMAND` no `.env.local` e use o mesmo `PLAYWRIGHT_BROWSERS_PATH=0` na instalação dos browsers.
+Se precisar sobrescrever o comando, mantenha `PLAYWRIGHT_BROWSERS_PATH="0"` separado no ambiente. O runner da lib usa `node node_modules/@playwright/test/cli.js` e não depende de prefixo inline no comando.
 
 ## Rotas
 
