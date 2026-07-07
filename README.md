@@ -2,7 +2,7 @@
 
 # Smoke Tests Playground
 
-Bundle Symfony para expor smoke tests browser como API JSON.
+Bundle Symfony para expor tests de varios tipos como API JSON.
 
 `composer require controleonline/smoke-tests-playground:dev-master`
 
