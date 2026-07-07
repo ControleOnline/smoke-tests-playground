@@ -1,14 +1,18 @@
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/controleonline/smoke-tests-playground/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/controleonline/smoke-tests-playground/?branch=master)
+
 # Smoke Tests Playground
 
-Bundle Symfony para expor os smoke tests browser como API JSON.
+Bundle Symfony para expor smoke tests browser como API JSON.
 
-O pacote não renderiza UI HTML. A leitura pública acontece por:
+`composer require controleonline/smoke-tests-playground:dev-master`
+
+O pacote nao renderiza UI HTML. A leitura publica acontece por:
 
 - `GET /tests`
 - `GET /tests/index.json`
 - `GET /tests/api`
 
-Os artifacts publicados pelos smoke tests ficam disponíveis por:
+Os artifacts publicados pelos smoke tests ficam disponiveis por:
 
 - `GET /tests/artifacts/{suite}/{arquivo}`
 
@@ -32,9 +36,9 @@ O `report.json` fica por suite. O bundle varre todas as suites e monta um `index
 - etapas de cada teste
 - prints com URLs autenticadas
 
-## Instalação
+## Instalacao
 
-1. Instale o Node.js com `nvm` no servidor, se ainda não existir:
+1. Instale o Node.js com `nvm` no servidor, se ainda nao existir:
 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
@@ -43,11 +47,11 @@ nvm install --lts
 nvm use --lts
 ```
 
-2. No projeto consumidor, instale o Playwright e os browsers com o mesmo usuário que executa o app:
+2. No projeto consumidor, instale o Playwright e os browsers com o mesmo usuario que executa o app:
 
 ```bash
 npm install -D @playwright/test
-npm run test:browser:install
+node node_modules/@playwright/test/cli.js install
 ```
 
 3. Instale o pacote com Composer.
@@ -69,32 +73,32 @@ O instalador escreve:
 - `config/routes/smoke_tests_playground.yaml`
 - `config/services/smoke_tests_playground.yaml`
 
-Se a instalação dos browsers falhar por permissão, o comando imprime instruções para executar como `root`.
+Se a instalacao dos browsers falhar por permissao, o comando imprime instrucoes para executar como `root`.
 
-## Variáveis de ambiente
+## Variaveis de ambiente
 
-- `PLAYWRIGHT_BROWSERS_PATH="0"` evita depender do cache global do usuário.
-- `SMOKE_TESTS_PLAYGROUND_TESTS_PATH` aponta para a raiz dos smoke tests, por padrão `var/tests/browser-smoke`.
-- `SMOKE_TESTS_PLAYGROUND_RUN_COMMAND` define o comando do runner, por padrão:
+- `PLAYWRIGHT_BROWSERS_PATH="0"` evita depender do cache global do usuario.
+- `SMOKE_TESTS_PLAYGROUND_TESTS_PATH` aponta para a raiz dos smoke tests, por padrao `var/tests/browser-smoke`.
+- `SMOKE_TESTS_PLAYGROUND_RUN_COMMAND` define o comando do runner, por padrao:
 
 ```bash
 node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/*.spec.js
 ```
 
-- `SMOKE_TESTS_PLAYGROUND_RUN_WORKDIR` define o diretório de execução.
+- `SMOKE_TESTS_PLAYGROUND_RUN_WORKDIR` define o diretorio de execucao.
 - `SMOKE_TESTS_PLAYGROUND_RUN_TIMEOUT` define o timeout em segundos.
 
 ## Rotas
 
 - `GET /tests` retorna o mesmo JSON de `GET /tests/index.json`
-- `GET /tests/index.json` retorna o índice agregado
+- `GET /tests/index.json` retorna o indice agregado
 - `GET /tests/api` retorna o mesmo JSON para compatibilidade
 - `GET /tests/artifacts/{suite}/{arquivo}` entrega os artifacts publicados
-- `POST /tests/run` continua disponível para disparar o runner do backend
+- `POST /tests/run` continua disponivel para disparar o runner do backend
 
-## Contrato do índice
+## Contrato do indice
 
-O índice público tem a estrutura geral:
+O indice publico tem a estrutura geral:
 
 ```json
 {
@@ -144,15 +148,16 @@ Cada screenshot publica:
 O projeto `tests-frontend-tool` consome a API via `.env`:
 
 ```bash
-VITE_API_BASE_URL=https://staging.frethical.com
-VITE_API_KEY=<api-key>
+API_ENTRYPOINT=https://staging.frethical.com
+HTACCESS_USER=<user>
+HTACCESS_PASSWORD=<password>
 ```
 
-Ele não executa smoke tests. Ele só lê `index.json`, mostra suites/tests/etapas e faz preview dos artifacts.
+Ele nao executa smoke tests. Ele so le `index.json`, mostra suites/tests/etapas e faz preview dos artifacts.
 
-## Conferência manual
+## Conferencia manual
 
-Exemplo de leitura do índice:
+Exemplo de leitura do indice:
 
 ```bash
 curl -H "Accept: application/json" \
@@ -172,9 +177,8 @@ curl -H "X-API-KEY: <api-key>" \
 
 O pacote tem testes para:
 
-- índice vazio
-- múltiplas suites
-- JSON inválido
+- indice vazio
+- multiplas suites
+- JSON invalido
 - resposta de run
 - entrega de artifacts
-

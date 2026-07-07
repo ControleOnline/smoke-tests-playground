@@ -14,6 +14,6 @@ final class SmokeTestsPlaygroundExtension extends Extension
     public function load(array $configs, ContainerBuilder $container): void
     {
         $loader = new YamlFileLoader($container, new FileLocator(dirname(__DIR__, 2).'/config'));
-        $loader->load('services.yaml');
+        $loader->load('config.yaml');
     }
 }
