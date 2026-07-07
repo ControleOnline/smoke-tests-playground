@@ -14,23 +14,26 @@ O pacote nao renderiza UI HTML. A leitura publica acontece por:
 
 Os artifacts publicados pelos smoke tests ficam disponiveis por:
 
-- `GET /tests/artifacts/{suite}/{arquivo}`
+- `GET /tests/artifacts/{suiteId}/{arquivo}`
 
 O frontend separado em `tests-frontend-tool` consome essa API com `X-API-KEY`.
 
 ## O que o Playwright publica
 
-Cada suite continua gravando em:
+Cada tipo e suite continuam gravando em:
 
-- `var/tests/browser-smoke/<suite>/report.json`
-- `var/tests/browser-smoke/<suite>/*.png`
-- `var/tests/browser-smoke/<suite>/*/*.png`
+- `var/tests/<type>/<suite>/report.json`
+- `var/tests/<type>/<suite>/report.xml`
+- `var/tests/<type>/<suite>/*.png`
+- `var/tests/<type>/<suite>/*/*.png`
 
-O `report.json` fica por suite. O bundle varre todas as suites e monta um `index.json` agregado com:
+O `report.json` ou `report.xml` fica por suite. O bundle varre todos os tipos e suites e monta um `index.json` agregado com:
 
 - status geral
 - progresso geral
 - resumo de suites e testes
+- resumo de tipos
+- lista de tipos
 - lista de suites
 - testes de cada suite
 - etapas de cada teste
@@ -78,7 +81,7 @@ Se a instalacao dos browsers falhar por permissao, o comando imprime instrucoes 
 ## Variaveis de ambiente
 
 - `PLAYWRIGHT_BROWSERS_PATH="0"` evita depender do cache global do usuario.
-- `SMOKE_TESTS_PLAYGROUND_TESTS_PATH` aponta para a raiz dos smoke tests, por padrao `var/tests/browser-smoke`.
+- `SMOKE_TESTS_PLAYGROUND_TESTS_PATH` aponta para a raiz dos smoke tests, por padrao `var/tests`.
 - `SMOKE_TESTS_PLAYGROUND_RUN_COMMAND` define o comando do runner, por padrao:
 
 ```bash
@@ -93,7 +96,7 @@ node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs te
 - `GET /tests` retorna o mesmo JSON de `GET /tests/index.json`
 - `GET /tests/index.json` retorna o indice agregado
 - `GET /tests/api` retorna o mesmo JSON para compatibilidade
-- `GET /tests/artifacts/{suite}/{arquivo}` entrega os artifacts publicados
+- `GET /tests/artifacts/{suiteId}/{arquivo}` entrega os artifacts publicados
 - `POST /tests/run` continua disponivel para disparar o runner do backend
 
 ## Contrato do indice
@@ -108,6 +111,11 @@ O indice publico tem a estrutura geral:
   "message": "1 suite com falha em 2 publicadas.",
   "lastRunAt": "2026-07-06T18:51:19.924Z",
   "summary": {
+    "types": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1
+    },
     "suites": {
       "total": 2,
       "passed": 1,
@@ -119,13 +127,28 @@ O indice publico tem a estrutura geral:
       "failed": 1
     }
   },
+  "types": [],
   "suites": []
 }
 ```
 
+Cada tipo publica:
+
+- `type`
+- `displayName`
+- `status`
+- `progress`
+- `message`
+- `summary`
+- `suites[]`
+
 Cada suite publica:
 
+- `type`
+- `typeDisplayName`
 - `suite`
+- `suitePath`
+- `suiteId`
 - `displayName`
 - `generatedAt`
 - `updatedAt`
@@ -169,7 +192,7 @@ Exemplo de artifact:
 
 ```bash
 curl -H "X-API-KEY: <api-key>" \
-  "https://<your-host>/tests/artifacts/transporter-login/01-login-screen.png" \
+  "https://<your-host>/tests/artifacts/<suiteId>/01-login-screen.png" \
   --output login-screen.png
 ```
 

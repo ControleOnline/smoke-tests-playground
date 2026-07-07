@@ -13,12 +13,13 @@ final class SmokeArtifactResponseFactory
 {
     public function __construct(
         private readonly SmokeTestsSettings $settings,
+        private readonly SmokeSuitePathCodec $suitePathCodec,
     ) {
     }
 
-    public function create(string $suite, string $artifactPath): Response
+    public function create(string $suiteId, string $artifactPath): Response
     {
-        $resolvedPath = $this->resolveArtifactPath($suite, $artifactPath);
+        $resolvedPath = $this->resolveArtifactPath($suiteId, $artifactPath);
         if ($resolvedPath === null) {
             return new JsonResponse([
                 'status' => 'failed',
@@ -35,17 +36,22 @@ final class SmokeArtifactResponseFactory
         return $response;
     }
 
-    private function resolveArtifactPath(string $suite, string $artifactPath): ?string
+    private function resolveArtifactPath(string $suiteId, string $artifactPath): ?string
     {
+        $suitePath = $this->suitePathCodec->decode($suiteId);
+        if ($suitePath === null) {
+            return null;
+        }
+
         $baseDirectory = rtrim($this->settings->testsPath(), '/\\');
-        $suiteDirectory = $baseDirectory.DIRECTORY_SEPARATOR.$suite;
+        $suiteDirectory = $baseDirectory.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $suitePath);
         $suiteRealPath = realpath($suiteDirectory);
 
         if ($suiteRealPath === false || !is_dir($suiteRealPath)) {
             return null;
         }
 
-        $relativePath = $this->normalizeRelativePath($artifactPath);
+        $relativePath = $this->suitePathCodec->normalizeRelativePath($artifactPath);
         if ($relativePath === null) {
             return null;
         }
@@ -58,27 +64,6 @@ final class SmokeArtifactResponseFactory
         }
 
         return $resolvedPath;
-    }
-
-    private function normalizeRelativePath(string $path): ?string
-    {
-        $path = trim(str_replace('\\', '/', $path));
-        if ($path === '') {
-            return null;
-        }
-
-        $segments = explode('/', $path);
-        $cleanSegments = [];
-
-        foreach ($segments as $segment) {
-            if ($segment === '' || $segment === '.' || $segment === '..') {
-                return null;
-            }
-
-            $cleanSegments[] = $segment;
-        }
-
-        return implode('/', $cleanSegments);
     }
 
     private function mimeTypeFromPath(string $path): string

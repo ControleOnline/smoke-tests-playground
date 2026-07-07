@@ -49,17 +49,17 @@ final class SmokeTestsController extends AbstractController
     }
 
     #[Route(
-        path: '/tests/artifacts/{suite}/{artifactPath}',
+        path: '/tests/artifacts/{suiteId}/{artifactPath}',
         name: 'smoke_tests_playground_artifact',
         methods: ['GET'],
         requirements: [
-            'suite' => '[^/]+',
+            'suiteId' => '[A-Za-z0-9_-]+',
             'artifactPath' => '.+',
         ],
     )]
-    public function artifact(string $suite, string $artifactPath): Response
+    public function artifact(string $suiteId, string $artifactPath): Response
     {
-        return $this->artifactResponseFactory->create($suite, $artifactPath);
+        return $this->artifactResponseFactory->create($suiteId, $artifactPath);
     }
 
     #[Route(path: '/tests/run', name: 'smoke_tests_playground_run', methods: ['POST'])]

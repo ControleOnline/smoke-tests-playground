@@ -22,7 +22,7 @@ final class SmokeTestsControllerTest extends KernelTestCase
         parent::setUp();
         self::ensureKernelShutdown();
         $this->projectDir = $this->makeProjectDir();
-        $_ENV['SMOKE_TESTS_PLAYGROUND_TESTS_PATH'] = $this->projectDir.'/var/tests/browser-smoke';
+        $_ENV['SMOKE_TESTS_PLAYGROUND_TESTS_PATH'] = $this->projectDir.'/var/tests';
         putenv('SMOKE_TESTS_PLAYGROUND_TESTS_PATH='.$_ENV['SMOKE_TESTS_PLAYGROUND_TESTS_PATH']);
     }
 
@@ -35,9 +35,10 @@ final class SmokeTestsControllerTest extends KernelTestCase
 
     public function testIndexEndpointsReturnTheSameJsonPayload(): void
     {
-        $this->writeReport('transporter-login', [
+        $this->writeReport('browser-smoke', 'transporter-login', [
             'generatedAt' => '2026-07-06T17:42:40.016Z',
             'suite' => 'transporter-login',
+            'displayName' => 'Transporter Login',
             'tests' => [
                 [
                     'title' => 'faz login e chega em listwinner com prints em /tests',
@@ -52,7 +53,7 @@ final class SmokeTestsControllerTest extends KernelTestCase
                 ],
             ],
         ]);
-        $this->writePng('transporter-login', '01-login-screen.png');
+        $this->writePng('browser-smoke', 'transporter-login', '01-login-screen.png');
 
         self::bootKernel();
 
@@ -70,27 +71,44 @@ final class SmokeTestsControllerTest extends KernelTestCase
 
         self::assertSame('passed', $payload['status']);
         self::assertSame(100, $payload['progress']);
+        self::assertSame(['total' => 1, 'passed' => 1, 'failed' => 0], $payload['summary']['types']);
         self::assertSame(['total' => 1, 'passed' => 1, 'failed' => 0], $payload['summary']['suites']);
         self::assertSame(['total' => 1, 'passed' => 1, 'failed' => 0], $payload['summary']['tests']);
+        self::assertCount(1, $payload['types']);
         self::assertCount(1, $payload['suites']);
-        self::assertSame('transporter-login', $payload['suites'][0]['suite']);
-        self::assertSame('/tests/artifacts/transporter-login/01-login-screen.png', $payload['suites'][0]['tests'][0]['screenshots'][0]['url']);
-        self::assertArrayNotHasKey('path', $payload['suites'][0]['tests'][0]['screenshots'][0]);
+
+        $browserType = $this->findType($payload['types'], 'browser-smoke');
+        $browserSuite = $browserType['suites'][0];
+
+        self::assertSame('Browser Smoke', $browserType['displayName']);
+        self::assertSame('/tests/artifacts/'.$browserSuite['suiteId'].'/report.json', $browserSuite['links']['report']);
+        self::assertSame('/tests/artifacts/'.$browserSuite['suiteId'].'/01-login-screen.png', $browserSuite['tests'][0]['screenshots'][0]['url']);
+        self::assertArrayNotHasKey('path', $browserSuite['tests'][0]['screenshots'][0]);
     }
 
     public function testArtifactRouteReturnsTheFileContents(): void
     {
-        $this->writeReport('transporter-login', [
+        $this->writeReport('browser-smoke', 'transporter-login', [
             'generatedAt' => '2026-07-06T17:42:40.016Z',
             'suite' => 'transporter-login',
             'tests' => [],
         ]);
-        $this->writePng('transporter-login', '01-login-screen.png');
+        $this->writePng('browser-smoke', 'transporter-login', '01-login-screen.png');
 
         self::bootKernel();
 
+        $indexPayload = json_decode(
+            (string) self::getContainer()->get('http_kernel')->handle(Request::create('/tests'))->getContent(),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+
+        $browserType = $this->findType($indexPayload['types'], 'browser-smoke');
+        $suiteId = $browserType['suites'][0]['suiteId'];
+
         $response = self::getContainer()->get('http_kernel')->handle(
-            Request::create('/tests/artifacts/transporter-login/01-login-screen.png'),
+            Request::create('/tests/artifacts/'.$suiteId.'/01-login-screen.png'),
         );
 
         self::assertSame(200, $response->getStatusCode());
@@ -101,7 +119,7 @@ final class SmokeTestsControllerTest extends KernelTestCase
     private function makeProjectDir(): string
     {
         $projectDir = sys_get_temp_dir().'/smoke-controller-'.bin2hex(random_bytes(6));
-        mkdir($projectDir.'/var/tests/browser-smoke', 0777, true);
+        mkdir($projectDir.'/var/tests', 0777, true);
 
         return $projectDir;
     }
@@ -109,9 +127,9 @@ final class SmokeTestsControllerTest extends KernelTestCase
     /**
      * @param array<string, mixed> $report
      */
-    private function writeReport(string $suite, array $report): void
+    private function writeReport(string $type, string $suite, array $report): void
     {
-        $suiteDir = $this->projectDir.'/var/tests/browser-smoke/'.$suite;
+        $suiteDir = $this->projectDir.'/var/tests/'.$type.'/'.$suite;
         if (!is_dir($suiteDir)) {
             mkdir($suiteDir, 0777, true);
         }
@@ -122,13 +140,29 @@ final class SmokeTestsControllerTest extends KernelTestCase
         );
     }
 
-    private function writePng(string $suite, string $relativePath): void
+    private function writePng(string $type, string $suite, string $relativePath): void
     {
-        $suiteDir = $this->projectDir.'/var/tests/browser-smoke/'.$suite;
+        $suiteDir = $this->projectDir.'/var/tests/'.$type.'/'.$suite;
         $filePath = $suiteDir.'/'.$relativePath;
         if (!is_dir(dirname($filePath))) {
             mkdir(dirname($filePath), 0777, true);
         }
         file_put_contents($filePath, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO2P5foAAAAASUVORK5CYII='));
+    }
+
+    /**
+     * @param list<array<string, mixed>> $types
+     *
+     * @return array<string, mixed>
+     */
+    private function findType(array $types, string $type): array
+    {
+        foreach ($types as $entry) {
+            if (($entry['type'] ?? null) === $type) {
+                return $entry;
+            }
+        }
+
+        self::fail(sprintf('Type %s not found.', $type));
     }
 }

@@ -3,11 +3,11 @@
 - `GET /tests`, `GET /tests/index.json` e `GET /tests/api` retornam o mesmo JSON de índice.
 - Não existe UI Twig neste pacote.
 - O frontend humano fica no projeto separado `tests-frontend-tool`.
-- O índice público é montado a partir de `var/tests/browser-smoke/<suite>/report.json`.
-- O diretório padrão de smoke tests é `var/tests/browser-smoke`.
+- O índice público é montado a partir de `var/tests/<type>/<suite>/report.json` ou `var/tests/<type>/<suite>/report.xml`.
+- O diretório padrão de smoke tests é `var/tests`.
 - Não exponha caminhos absolutos como `testsPath`, `reportPath` ou `runWorkingDirectory` na API pública.
-- Prints e vídeos devem ser servidos por URLs autenticadas em `/tests/artifacts/{suite}/{arquivo}`.
-- A API pública deve expor `status`, `progress`, `message`, `lastRunAt`, `summary` e `suites`.
+- Prints e vídeos devem ser servidos por URLs autenticadas em `/tests/artifacts/{suiteId}/{arquivo}`.
+- A API pública deve expor `status`, `progress`, `message`, `lastRunAt`, `summary`, `types` e `suites`.
 - Cada suite publica seus `tests[]`, `steps[]` e `screenshots[]` já normalizados.
 - Quando alterar o contrato público, atualize a API, o README e o frontend consumidor no mesmo ajuste.
 - O instalador deve escrever `PLAYWRIGHT_BROWSERS_PATH="0"` no `.env`.

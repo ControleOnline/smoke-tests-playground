@@ -24,6 +24,6 @@ final class SmokeTestsSettingsTest extends TestCase
         $settings = new SmokeTestsSettings('/app');
 
         self::assertContains('PLAYWRIGHT_BROWSERS_PATH="0"', $settings->defaultEnvLines());
-        self::assertContains('SMOKE_TESTS_PLAYGROUND_TESTS_PATH="var/tests/browser-smoke"', $settings->defaultEnvLines());
+        self::assertContains('SMOKE_TESTS_PLAYGROUND_TESTS_PATH="var/tests"', $settings->defaultEnvLines());
     }
 }

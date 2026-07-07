@@ -8,6 +8,7 @@ final class SmokeTestsIndexFactory
 {
     public function __construct(
         private readonly SmokeReportReader $reportReader,
+        private readonly SmokeSuitePathCodec $suitePathCodec,
     ) {
     }
 
@@ -29,15 +30,17 @@ final class SmokeTestsIndexFactory
             $rightTimestamp = $this->reportTimestamp($right);
 
             return $rightTimestamp <=> $leftTimestamp
-                ?: strcmp((string) ($left['suite'] ?? ''), (string) ($right['suite'] ?? ''));
+                ?: strcmp((string) ($left['suiteId'] ?? $left['suite'] ?? ''), (string) ($right['suiteId'] ?? $right['suite'] ?? ''));
         });
 
         if ($suites === []) {
             return $this->emptyIndex();
         }
 
+        $types = $this->buildTypeSections($suites);
         $suiteSummary = $this->buildSuiteSummary($suites);
         $testSummary = $this->buildTestSummary($suites);
+        $typeSummary = $this->buildTypeSummary($types);
 
         return [
             'generatedAt' => date(DATE_ATOM),
@@ -46,9 +49,11 @@ final class SmokeTestsIndexFactory
             'message' => $this->buildMessage($suiteSummary, $testSummary),
             'lastRunAt' => $this->lastRunAt($suites),
             'summary' => [
+                'types' => $typeSummary,
                 'suites' => $suiteSummary,
                 'tests' => $testSummary,
             ],
+            'types' => $types,
             'suites' => $suites,
             'links' => [
                 'self' => '/tests/index.json',
@@ -74,6 +79,101 @@ final class SmokeTestsIndexFactory
         }
 
         return 0;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $suites
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function buildTypeSections(array $suites): array
+    {
+        $grouped = [];
+
+        foreach ($suites as $suite) {
+            $type = (string) ($suite['type'] ?? 'general');
+            $grouped[$type][] = $suite;
+        }
+
+        $types = [];
+
+        foreach ($grouped as $typeKey => $typeSuites) {
+            usort($typeSuites, function (array $left, array $right): int {
+                $leftTimestamp = $this->reportTimestamp($left);
+                $rightTimestamp = $this->reportTimestamp($right);
+
+                return $rightTimestamp <=> $leftTimestamp
+                    ?: strcmp((string) ($left['suiteId'] ?? $left['suite'] ?? ''), (string) ($right['suiteId'] ?? $right['suite'] ?? ''));
+            });
+
+            $suiteSummary = $this->buildSuiteSummary($typeSuites);
+            $testSummary = $this->buildTestSummary($typeSuites);
+
+            $types[] = [
+                'type' => $typeKey,
+                'displayName' => (string) ($typeSuites[0]['typeDisplayName'] ?? $this->suitePathCodec->humanizeLabel($typeKey)),
+                'status' => $suiteSummary['failed'] === 0 ? 'passed' : 'failed',
+                'progress' => $testSummary['total'] > 0 ? (int) round($testSummary['passed'] * 100 / $testSummary['total']) : 0,
+                'message' => $this->buildTypeMessage($suiteSummary, $testSummary),
+                'summary' => [
+                    'suites' => $suiteSummary,
+                    'tests' => $testSummary,
+                ],
+                'suites' => $typeSuites,
+            ];
+        }
+
+        usort($types, function (array $left, array $right): int {
+            $leftTimestamp = $this->typeTimestamp($left);
+            $rightTimestamp = $this->typeTimestamp($right);
+
+            return $rightTimestamp <=> $leftTimestamp
+                ?: strcmp((string) ($left['displayName'] ?? $left['type'] ?? ''), (string) ($right['displayName'] ?? $right['type'] ?? ''));
+        });
+
+        return $types;
+    }
+
+    /**
+     * @param array<string, mixed> $type
+     */
+    private function typeTimestamp(array $type): int
+    {
+        foreach (($type['suites'] ?? []) as $suite) {
+            $timestamp = $this->reportTimestamp($suite);
+            if ($timestamp > 0) {
+                return $timestamp;
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $suites
+     *
+     * @return array{total:int,passed:int,failed:int}
+     */
+    private function buildTypeSummary(array $suites): array
+    {
+        $passed = 0;
+        $failed = 0;
+
+        foreach ($suites as $suite) {
+            if (($suite['status'] ?? null) === 'passed') {
+                $passed++;
+
+                continue;
+            }
+
+            $failed++;
+        }
+
+        return [
+            'total' => count($suites),
+            'passed' => $passed,
+            'failed' => $failed,
+        ];
     }
 
     /**
@@ -166,6 +266,36 @@ final class SmokeTestsIndexFactory
     }
 
     /**
+     * @param array{total:int,passed:int,failed:int} $suiteSummary
+     * @param array{total:int,passed:int,failed:int} $testSummary
+     */
+    private function buildTypeMessage(array $suiteSummary, array $testSummary): string
+    {
+        if ($suiteSummary['total'] === 0) {
+            return 'Nenhuma suite publicada neste tipo.';
+        }
+
+        if ($suiteSummary['failed'] === 0) {
+            return sprintf(
+                '%d suite%s publicada%s e %d teste%s passaram.',
+                $suiteSummary['total'],
+                $suiteSummary['total'] === 1 ? '' : 's',
+                $suiteSummary['total'] === 1 ? '' : 's',
+                $testSummary['passed'],
+                $testSummary['passed'] === 1 ? '' : 's',
+            );
+        }
+
+        return sprintf(
+            '%d suite%s com falha em %d publicad%s.',
+            $suiteSummary['failed'],
+            $suiteSummary['failed'] === 1 ? '' : 's',
+            $suiteSummary['total'],
+            $suiteSummary['total'] === 1 ? '' : 'as',
+        );
+    }
+
+    /**
      * @param list<array<string, mixed>> $suites
      */
     private function lastRunAt(array $suites): ?string
@@ -191,6 +321,11 @@ final class SmokeTestsIndexFactory
             'message' => 'Nenhum relatório publicado ainda.',
             'lastRunAt' => null,
             'summary' => [
+                'types' => [
+                    'total' => 0,
+                    'passed' => 0,
+                    'failed' => 0,
+                ],
                 'suites' => [
                     'total' => 0,
                     'passed' => 0,
@@ -202,6 +337,7 @@ final class SmokeTestsIndexFactory
                     'failed' => 0,
                 ],
             ],
+            'types' => [],
             'suites' => [],
             'links' => [
                 'self' => '/tests/index.json',

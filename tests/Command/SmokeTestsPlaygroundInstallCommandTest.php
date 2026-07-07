@@ -36,7 +36,7 @@ final class SmokeTestsPlaygroundInstallCommandTest extends TestCase
         self::assertFileExists($projectDir.'/.env');
         self::assertFileExists($projectDir.'/config/routes/smoke_tests_playground.yaml');
         self::assertFileExists($projectDir.'/config/services/smoke_tests_playground.yaml');
-        self::assertStringContainsString('SMOKE_TESTS_PLAYGROUND_TESTS_PATH="var/tests/browser-smoke"', file_get_contents($projectDir.'/.env'));
+        self::assertStringContainsString('SMOKE_TESTS_PLAYGROUND_TESTS_PATH="var/tests"', file_get_contents($projectDir.'/.env'));
         self::assertStringContainsString('tests/browser/*.spec.js', file_get_contents($projectDir.'/.env'));
         self::assertStringContainsString('Browsers do Playwright instalados', $tester->getDisplay());
     }

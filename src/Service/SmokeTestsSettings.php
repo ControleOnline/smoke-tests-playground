@@ -15,8 +15,8 @@ final class SmokeTestsSettings
     {
         return $this->normalizePath($this->env(
             'SMOKE_TESTS_PLAYGROUND_TESTS_PATH',
-            $this->projectDir.'/var/tests/browser-smoke',
-        ) ?? $this->projectDir.'/var/tests/browser-smoke');
+            $this->projectDir.'/var/tests',
+        ) ?? $this->projectDir.'/var/tests');
     }
 
     public function indexPath(): string
@@ -71,7 +71,7 @@ final class SmokeTestsSettings
 
     public function defaultTestsPathValue(): string
     {
-        return 'var/tests/browser-smoke';
+        return 'var/tests';
     }
 
     public function defaultRunWorkingDirectoryValue(): string
