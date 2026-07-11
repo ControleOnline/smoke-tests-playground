@@ -1,6 +1,6 @@
 # Smoke Tests Playground Rules
 
-- `GET /tests`, `GET /tests/index.json` e `GET /tests/api` retornam o mesmo JSON de índice.
+- `GET /tests` é o contrato canônico; `GET /tests/index.json` e `GET /tests/api` continuam como aliases com o mesmo JSON de índice.
 - Não existe UI Twig neste pacote.
 - O frontend humano fica no projeto separado `tests-frontend-tool`.
 - O índice público é montado a partir de `var/tests/<type>/<suite>/report.json` ou `var/tests/<type>/<suite>/report.xml`.

@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit bootstrap="vendor/autoload.php" colors="true" cacheResult="false">
+<phpunit bootstrap="tests/bootstrap.php" colors="true" cacheResult="false">
+    <logging>
+        <junit outputFile="../../../var/tests/phpunit/smoke-tests-playground/report.xml" />
+    </logging>
+
     <testsuites>
         <testsuite name="SmokeTestsPlayground">
             <directory>tests</directory>

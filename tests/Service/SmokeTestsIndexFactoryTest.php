@@ -23,7 +23,7 @@ final class SmokeTestsIndexFactoryTest extends TestCase
         self::assertSame(0, $index['progress']);
         self::assertSame('Nenhum relatório publicado ainda.', $index['message']);
         self::assertNull($index['lastRunAt']);
-        self::assertSame(['self' => '/tests/index.json', 'artifacts' => '/tests/artifacts'], $index['links']);
+        self::assertSame(['self' => '/tests', 'artifacts' => '/tests/artifacts'], $index['links']);
         self::assertSame(['total' => 0, 'passed' => 0, 'failed' => 0], $index['summary']['types']);
         self::assertSame(['total' => 0, 'passed' => 0, 'failed' => 0], $index['summary']['suites']);
         self::assertSame(['total' => 0, 'passed' => 0, 'failed' => 0], $index['summary']['tests']);

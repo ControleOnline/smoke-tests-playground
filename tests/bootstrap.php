@@ -1,0 +1,17 @@
+<?php
+
+$autoloadPaths = [
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../../vendor/autoload.php',
+];
+
+foreach ($autoloadPaths as $autoloadPath) {
+    if (is_file($autoloadPath)) {
+        require_once $autoloadPath;
+        require_once __DIR__ . '/../../../../config/test-reporting.php';
+        ensureTestReportDirectory(__DIR__ . '/../../../../var/tests/phpunit/smoke-tests-playground');
+        return;
+    }
+}
+
+throw new RuntimeException('Composer autoload.php not found for smoke-tests-playground module tests.');

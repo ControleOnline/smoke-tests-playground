@@ -56,7 +56,7 @@ final class SmokeTestsPlaygroundInstallCommand extends Command
         $header = [
             '# Smoke Tests Playground',
             '# Configuração padrão instalada pelo pacote controleonline/smoke-tests-playground.',
-            '# O playground expõe JSON em /tests e /tests/index.json, e os prints ficam em /tests/artifacts.',
+            '# O playground expõe JSON em /tests, com /tests/index.json mantido como alias, e os prints ficam em /tests/artifacts.',
             '# Antes de usar o runner, o projeto consumidor precisa instalar o Playwright localmente e gerar os browsers com o mesmo usuário que executa o app.',
         ];
 

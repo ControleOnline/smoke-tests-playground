@@ -56,7 +56,7 @@ final class SmokeTestsIndexFactory
             'types' => $types,
             'suites' => $suites,
             'links' => [
-                'self' => '/tests/index.json',
+                'self' => '/tests',
                 'artifacts' => '/tests/artifacts',
             ],
         ];
@@ -340,7 +340,7 @@ final class SmokeTestsIndexFactory
             'types' => [],
             'suites' => [],
             'links' => [
-                'self' => '/tests/index.json',
+                'self' => '/tests',
                 'artifacts' => '/tests/artifacts',
             ],
         ];

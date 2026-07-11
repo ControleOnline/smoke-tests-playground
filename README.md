@@ -9,7 +9,7 @@ Bundle Symfony para expor tests de varios tipos como API JSON.
 O pacote nao renderiza UI HTML. A leitura publica acontece por:
 
 - `GET /tests`
-- `GET /tests/index.json`
+- `GET /tests/index.json` como alias de compatibilidade
 - `GET /tests/api`
 
 Os artifacts publicados pelos smoke tests ficam disponiveis por:
@@ -93,8 +93,8 @@ node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs te
 
 ## Rotas
 
-- `GET /tests` retorna o mesmo JSON de `GET /tests/index.json`
-- `GET /tests/index.json` retorna o indice agregado
+- `GET /tests` retorna o indice agregado canônico
+- `GET /tests/index.json` retorna o mesmo JSON para compatibilidade
 - `GET /tests/api` retorna o mesmo JSON para compatibilidade
 - `GET /tests/artifacts/{suiteId}/{arquivo}` entrega os artifacts publicados
 - `POST /tests/run` continua disponivel para disparar o runner do backend
