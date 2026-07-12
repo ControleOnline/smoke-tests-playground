@@ -18,8 +18,11 @@ jobs:
           key: ${{ secrets.CONTROLEONLINE }}
           port: ${{ secrets.PORT }}
           script: |
+                  export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
                   cd ~/sistemas/controleonline/api/modules/controleonline/smoke-tests-playground
+                  git fetch origin
+                  git checkout master
                   git reset --hard origin/master
-                  git pull origin master
+                  git clean -ffd
                   cd ~/sistemas/controleonline/api/
                   php bin/console cache:clear

@@ -17,8 +17,11 @@ jobs:
           username: ${{ secrets.DEV_USER }}
           password: ${{ secrets.DEV_PASS }}
           script: |
+                  export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
                   cd /var/www/api-community/modules/controleonline/smoke-tests-playground
+                  git fetch origin
+                  git checkout staging
                   git reset --hard origin/staging
-                  git pull origin staging
+                  git clean -ffd
                   cd /var/www/api-community/
                   php bin/console cache:clear
