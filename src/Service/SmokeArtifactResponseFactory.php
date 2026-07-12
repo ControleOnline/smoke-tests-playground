@@ -14,6 +14,7 @@ final class SmokeArtifactResponseFactory
     public function __construct(
         private readonly SmokeTestsSettings $settings,
         private readonly SmokeSuitePathCodec $suitePathCodec,
+        private readonly SmokeRemoteArtifactReaderInterface $remoteArtifactReader,
     ) {
     }
 
@@ -21,6 +22,11 @@ final class SmokeArtifactResponseFactory
     {
         $resolvedPath = $this->resolveArtifactPath($suiteId, $artifactPath);
         if ($resolvedPath === null) {
+            $remoteResponse = $this->remoteArtifactReader->create($suiteId, $artifactPath);
+            if ($remoteResponse instanceof Response) {
+                return $remoteResponse;
+            }
+
             return new JsonResponse([
                 'status' => 'failed',
                 'message' => 'Artifact not found.',

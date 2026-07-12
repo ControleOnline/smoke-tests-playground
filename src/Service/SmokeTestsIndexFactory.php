@@ -8,6 +8,7 @@ final class SmokeTestsIndexFactory
 {
     public function __construct(
         private readonly SmokeReportReader $reportReader,
+        private readonly SmokeRemoteIndexReaderInterface $remoteIndexReader,
         private readonly SmokeSuitePathCodec $suitePathCodec,
     ) {
     }
@@ -19,6 +20,14 @@ final class SmokeTestsIndexFactory
         foreach ($this->reportReader->discoverReportFiles() as $reportPath) {
             $report = $this->reportReader->readReportFile($reportPath);
             if ($report === null) {
+                continue;
+            }
+
+            $suites[] = $report;
+        }
+
+        foreach ($this->remoteIndexReader->readSuites() as $report) {
+            if (!is_array($report)) {
                 continue;
             }
 

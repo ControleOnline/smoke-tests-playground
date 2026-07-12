@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ControleOnline\SmokeTestsPlayground\Tests\Service;
 
 use ControleOnline\SmokeTestsPlayground\Service\SmokeReportReader;
+use ControleOnline\SmokeTestsPlayground\Service\SmokeRemoteIndexReaderInterface;
 use ControleOnline\SmokeTestsPlayground\Service\SmokeSuitePathCodec;
 use ControleOnline\SmokeTestsPlayground\Service\SmokeTestsIndexFactory;
 use ControleOnline\SmokeTestsPlayground\Service\SmokeTestsSettings;
@@ -121,6 +122,64 @@ XML);
         self::assertSame('2026-07-06T18:51:19+00:00', $index['lastRunAt']);
     }
 
+    public function testCreateMergesRemoteSuitesFromTheFrontendIndex(): void
+    {
+        $projectDir = $this->makeProjectDir();
+        $this->writeJsonReport($projectDir, 'browser-smoke', 'transporter-login', [
+            'generatedAt' => '2026-07-06T17:42:40.016Z',
+            'suite' => 'transporter-login',
+            'displayName' => 'Transporter Login',
+            'tests' => [
+                [
+                    'title' => 'faz login e chega em listwinner com prints em /tests',
+                    'status' => 'passed',
+                    'error' => null,
+                    'screenshots' => [],
+                ],
+            ],
+        ]);
+
+        $remoteSuite = [
+            'type' => 'automated',
+            'typeDisplayName' => 'Automated',
+            'suite' => 'home-page',
+            'suitePath' => 'automated/home-page',
+            'suiteId' => 'YXV0b21hdGVkL2hvbWUtcGFnZQ',
+            'displayName' => 'Home Page',
+            'generatedAt' => '2026-07-06T18:51:19.924Z',
+            'updatedAt' => '2026-07-06T18:51:19.924Z',
+            'status' => 'passed',
+            'summary' => ['total' => 1, 'passed' => 1, 'failed' => 0],
+            'tests' => [
+                [
+                    'title' => 'renders the landing page',
+                    'status' => 'passed',
+                    'error' => null,
+                    'screenshots' => [],
+                    'steps' => [],
+                ],
+            ],
+            'error' => null,
+            'links' => ['report' => '/tests/artifacts/YXV0b21hdGVkL2hvbWUtcGFnZQ/report.json'],
+        ];
+
+        $factory = $this->makeFactory($projectDir, [$remoteSuite]);
+        $index = $factory->create();
+
+        self::assertSame('passed', $index['status']);
+        self::assertSame(100, $index['progress']);
+        self::assertSame(['total' => 2, 'passed' => 2, 'failed' => 0], $index['summary']['types']);
+        self::assertSame(['total' => 2, 'passed' => 2, 'failed' => 0], $index['summary']['suites']);
+        self::assertSame(['total' => 2, 'passed' => 2, 'failed' => 0], $index['summary']['tests']);
+        self::assertCount(2, $index['types']);
+        self::assertCount(2, $index['suites']);
+
+        $automatedType = $this->findType($index['types'], 'automated');
+        self::assertSame('Automated', $automatedType['displayName']);
+        self::assertSame('passed', $automatedType['status']);
+        self::assertSame('/tests/artifacts/YXV0b21hdGVkL2hvbWUtcGFnZQ/report.json', $automatedType['suites'][0]['links']['report']);
+    }
+
     public function testCreateMarksInvalidJsonSuiteAsFailed(): void
     {
         $projectDir = $this->makeProjectDir();
@@ -141,7 +200,7 @@ XML);
         self::assertNotEmpty($index['suites'][0]['error']);
     }
 
-    private function makeFactory(string $projectDir): SmokeTestsIndexFactory
+    private function makeFactory(string $projectDir, array $remoteSuites = []): SmokeTestsIndexFactory
     {
         $this->resetEnv();
         $_ENV['SMOKE_TESTS_PLAYGROUND_TESTS_PATH'] = $projectDir.'/var/tests';
@@ -151,8 +210,32 @@ XML);
 
         return new SmokeTestsIndexFactory(
             new SmokeReportReader($settings, new SmokeSuitePathCodec()),
+            $this->makeRemoteReader($remoteSuites),
             new SmokeSuitePathCodec(),
         );
+    }
+
+    /**
+     * @param list<array<string, mixed>> $suites
+     */
+    private function makeRemoteReader(array $suites): SmokeRemoteIndexReaderInterface
+    {
+        return new class($suites) implements SmokeRemoteIndexReaderInterface {
+            /**
+             * @param list<array<string, mixed>> $suites
+             */
+            public function __construct(private readonly array $suites)
+            {
+            }
+
+            /**
+             * @return list<array<string, mixed>>
+             */
+            public function readSuites(): array
+            {
+                return $this->suites;
+            }
+        };
     }
 
     private function makeProjectDir(): string
