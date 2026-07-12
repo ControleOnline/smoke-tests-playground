@@ -19,8 +19,10 @@ final class SmokeRemoteIndexReaderTest extends TestCase
     public function testReadSuitesFetchesTheRemoteFrontIndexWhenTheDomainDiffers(): void
     {
         $capturedUrl = null;
-        $httpClient = new MockHttpClient(function (string $method, string $url, array $options = []) use (&$capturedUrl) {
+        $capturedOptions = [];
+        $httpClient = new MockHttpClient(function (string $method, string $url, array $options = []) use (&$capturedUrl, &$capturedOptions) {
             $capturedUrl = $url;
+            $capturedOptions = $options;
 
             return new MockResponse(json_encode([
                 'suites' => [
@@ -59,6 +61,9 @@ final class SmokeRemoteIndexReaderTest extends TestCase
         $suites = $reader->readSuites();
 
         self::assertSame('https://admin.controleonline.com/tests/index.json', $capturedUrl);
+        self::assertFalse($capturedOptions['verify_peer'] ?? true);
+        self::assertFalse($capturedOptions['verify_host'] ?? true);
+        self::assertEquals(5, $capturedOptions['timeout'] ?? null);
         self::assertCount(1, $suites);
         self::assertSame('automated', $suites[0]['type']);
     }

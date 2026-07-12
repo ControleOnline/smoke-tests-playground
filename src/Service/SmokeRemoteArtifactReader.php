@@ -25,6 +25,8 @@ final class SmokeRemoteArtifactReader implements SmokeRemoteArtifactReaderInterf
 
         try {
             $response = $this->httpClient->request('GET', $url, [
+                'verify_peer' => false,
+                'verify_host' => false,
                 'timeout' => 10,
             ]);
 

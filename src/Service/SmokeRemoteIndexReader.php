@@ -29,6 +29,8 @@ final class SmokeRemoteIndexReader implements SmokeRemoteIndexReaderInterface
                 'headers' => [
                     'Accept' => 'application/json',
                 ],
+                'verify_peer' => false,
+                'verify_host' => false,
                 'timeout' => 5,
             ]);
 
