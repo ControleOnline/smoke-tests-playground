@@ -20,4 +20,16 @@ final class SmokeCommandResolverTest extends TestCase
         self::assertSame('--config=playwright.config.cjs', $arguments[2]);
         self::assertSame('tests/browser/company-advertiser-route-smoke.spec.js', $arguments[3]);
     }
+
+    public function testNodeCommandsResolveTheCurrentNodeBinary(): void
+    {
+        $resolver = new SmokeCommandResolver();
+        $arguments = $resolver->toProcessArguments('node node_modules/@playwright/test/cli.js test --config=playwright.config.cjs tests/browser/company-advertiser-route-smoke.spec.js');
+
+        self::assertMatchesRegularExpression('/^node(?:\.exe)?$/i', basename($arguments[0]));
+        self::assertSame('node_modules/@playwright/test/cli.js', $arguments[1]);
+        self::assertSame('test', $arguments[2]);
+        self::assertSame('--config=playwright.config.cjs', $arguments[3]);
+        self::assertSame('tests/browser/company-advertiser-route-smoke.spec.js', $arguments[4]);
+    }
 }

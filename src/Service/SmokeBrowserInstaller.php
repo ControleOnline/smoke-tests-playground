@@ -10,19 +10,16 @@ final class SmokeBrowserInstaller implements SmokeBrowserInstallerInterface
 {
     public function __construct(
         private readonly SmokeTestsSettings $settings,
+        private readonly SmokeCommandResolver $commandResolver,
     ) {
     }
 
     public function install(): void
     {
         $process = new Process(
-            [
-                'node',
-                'node_modules/@playwright/test/cli.js',
-                'install',
-                '--force',
-                'chromium',
-            ],
+            $this->commandResolver->toProcessArguments(
+                'node node_modules/@playwright/test/cli.js install --force chromium',
+            ),
             $this->settings->runWorkingDirectory(),
             [
                 'PLAYWRIGHT_BROWSERS_PATH' => '0',
