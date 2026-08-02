@@ -13,3 +13,7 @@
 - O instalador deve escrever `PLAYWRIGHT_BROWSERS_PATH="0"` no `.env`.
 - O comando padrão de run deve usar `node node_modules/@playwright/test/cli.js`, sem `npx`.
 - O instalador deve continuar sendo o ponto de entrada para escrever defaults no projeto consumidor.
+
+## Qualidade de código
+
+- A barra comum de modularizacao, testes, smoke tests e limite de tamanho de componentes vive em `https://github.com/ControleOnline/agents-mcp/blob/master/skills/shared/code-quality.md`.
