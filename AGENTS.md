@@ -1,19 +1,6 @@
-# Smoke Tests Playground Rules
+## Ponto de entrada
 
-- `GET /tests` é o contrato canônico; `GET /tests/index.json` e `GET /tests/api` continuam como aliases com o mesmo JSON de índice.
-- Não existe UI Twig neste pacote.
-- O frontend humano fica no projeto separado `tests-frontend-tool`.
-- O índice público é montado a partir de `var/tests/<type>/<suite>/report.json` ou `var/tests/<type>/<suite>/report.xml`.
-- O diretório padrão de smoke tests é `var/tests`.
-- Não exponha caminhos absolutos como `testsPath`, `reportPath` ou `runWorkingDirectory` na API pública.
-- Prints e vídeos devem ser servidos por URLs autenticadas em `/tests/artifacts/{suiteId}/{arquivo}`.
-- A API pública deve expor `status`, `progress`, `message`, `lastRunAt`, `summary`, `types` e `suites`.
-- Cada suite publica seus `tests[]`, `steps[]` e `screenshots[]` já normalizados.
-- Quando alterar o contrato público, atualize a API, o README e o frontend consumidor no mesmo ajuste.
-- O instalador deve escrever `PLAYWRIGHT_BROWSERS_PATH="0"` no `.env`.
-- O comando padrão de run deve usar `node node_modules/@playwright/test/cli.js`, sem `npx`.
-- O instalador deve continuar sendo o ponto de entrada para escrever defaults no projeto consumidor.
-
-## Qualidade de código
-
-- A barra comum de modularizacao, testes, smoke tests e limite de tamanho de componentes vive em `https://github.com/ControleOnline/agents-mcp/blob/master/skills/shared/code-quality.md`.
+- A documentação funcional e de regras deste modulo vive na wiki do proprio repositório e na wiki principal da API.
+- Regras transversais de qualidade, modularizacao e limites de componente vivem em `https://github.com/ControleOnline/agents-mcp/blob/master/skills/shared/code-quality.md`.
+- Quando houver detalhe especifico de implementacao, prefira comentar no codigo em ingles perto da regra.
+- Este arquivo deve ficar curto e servir apenas como ponte para as fontes oficiais.
