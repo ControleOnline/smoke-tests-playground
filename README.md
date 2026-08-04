@@ -4,8 +4,6 @@
 
 Bundle Symfony para expor tests de varios tipos como API JSON.
 
-`composer require controleonline/smoke-tests-playground:dev-master`
-
 O pacote nao renderiza UI HTML. A leitura publica acontece por:
 
 - `GET /tests`
@@ -40,43 +38,7 @@ O `report.json` ou `report.xml` fica por suite. O bundle varre todos os tipos e 
 - prints com URLs autenticadas
 
 ## Instalacao
-
-1. Instale o Node.js com `nvm` no servidor, se ainda nao existir:
-
-```bash
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-source ~/.bashrc
-nvm install --lts
-nvm use --lts
-```
-
-2. No projeto consumidor, instale o Playwright e os browsers com o mesmo usuario que executa o app:
-
-```bash
-npm install -D @playwright/test
-node node_modules/@playwright/test/cli.js install
-```
-
-3. Instale o pacote com Composer.
-4. Registre o bundle em `config/bundles.php`:
-
-```php
-ControleOnline\SmokeTestsPlayground\SmokeTestsPlaygroundBundle::class => ['all' => true],
-```
-
-5. Rode o bootstrap do pacote:
-
-```bash
-php bin/console smoke-tests-playground:install
-```
-
-O instalador escreve:
-
-- `.env` com os defaults do smoke
-- `config/routes/smoke_tests_playground.yaml`
-- `config/services/smoke_tests_playground.yaml`
-
-Se a instalacao dos browsers falhar por permissao, o comando imprime instrucoes para executar como `root`.
+[Instalacao na wiki](https://github.com/ControleOnline/smoke-tests-playground/wiki/Instalacao)
 
 ## Variaveis de ambiente
 
@@ -205,3 +167,9 @@ O pacote tem testes para:
 - JSON invalido
 - resposta de run
 - entrega de artifacts
+
+## Links obrigatorios
+
+- [Documentacao para clientes](http://ajuda.controleonline.com/)
+- [Site institucional](http://controleonline.com/)
+- [Wiki tecnica](https://github.com/ControleOnline/smoke-tests-playground/wiki)
