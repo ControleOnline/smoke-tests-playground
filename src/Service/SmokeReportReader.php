@@ -9,6 +9,8 @@ final class SmokeReportReader
     public function __construct(
         private readonly SmokeTestsSettings $settings,
         private readonly SmokeSuitePathCodec $suitePathCodec,
+        private readonly SmokeFlowchartMetadata $flowchartMetadata,
+        private readonly SmokeXmlReportParser $xmlReportParser,
     ) {
     }
 
@@ -148,27 +150,19 @@ final class SmokeReportReader
      */
     private function readXmlReportFile(array $context, string $reportPath, ?string $updatedAt): ?array
     {
-        $previousUseInternalErrors = libxml_use_internal_errors(true);
-
-        try {
-            $xml = simplexml_load_file($reportPath, \SimpleXMLElement::class, LIBXML_NOCDATA);
-        } finally {
-            libxml_use_internal_errors($previousUseInternalErrors);
-        }
-
-        if (!$xml instanceof \SimpleXMLElement) {
-            return $this->buildInvalidReport($context, $updatedAt, basename($reportPath), 'O arquivo XML da suite é inválido.');
-        }
-
-        $rootName = $xml->getName();
-        if ($rootName !== 'testsuite' && $rootName !== 'testsuites') {
+        $parsed = $this->xmlReportParser->parse($reportPath, $context['suite'], $updatedAt);
+        if ($parsed === null) {
             return null;
         }
 
+        if (($parsed['valid'] ?? false) !== true) {
+            return $this->buildInvalidReport($context, $updatedAt, basename($reportPath), 'O arquivo XML da suite é inválido.');
+        }
+
         $report = [
-            'suite' => $this->extractXmlSuiteName($xml, $context['suite']),
-            'displayName' => $this->extractXmlDisplayName($xml, $context['suite']),
-            'generatedAt' => $this->extractXmlGeneratedAt($xml, $updatedAt),
+            'suite' => $parsed['suite'],
+            'displayName' => $parsed['displayName'],
+            'generatedAt' => $parsed['generatedAt'],
             'type' => $context['type'],
             'typeDisplayName' => $context['typeDisplayName'],
         ];
@@ -178,7 +172,7 @@ final class SmokeReportReader
             $report,
             $reportPath,
             $updatedAt,
-            $this->normalizeXmlTests($xml),
+            $parsed['tests'],
         );
     }
 
@@ -199,6 +193,8 @@ final class SmokeReportReader
         $summary = $this->buildSummary($tests);
         $status = $this->resolveStatus($this->firstString($report, ['status']), $summary);
 
+        $flowchart = $this->flowchartMetadata->normalize($report);
+
         return [
             'type' => $type,
             'typeDisplayName' => $typeDisplayName,
@@ -210,7 +206,10 @@ final class SmokeReportReader
             'updatedAt' => $updatedAt,
             'status' => $status,
             'summary' => $summary,
-            'tests' => $tests,
+            'flowchartIds' => $flowchart['flowchartIds'],
+            'flowchartLinks' => $flowchart['flowchartLinks'],
+            'flowKey' => $flowchart['flowKey'],
+            'tests' => $this->flowchartMetadata->enrichSuite(['tests' => $tests] + $flowchart)['tests'],
             'error' => $this->firstString($report, ['error']),
             'links' => [
                 'report' => $this->buildArtifactUrl($context['suiteId'], basename($reportPath)),
@@ -240,6 +239,9 @@ final class SmokeReportReader
                 'passed' => 0,
                 'failed' => 0,
             ],
+            'flowchartIds' => [],
+            'flowchartLinks' => [],
+            'flowKey' => null,
             'tests' => [],
             'error' => $error,
             'links' => [
@@ -385,135 +387,6 @@ final class SmokeReportReader
         $normalized = $this->suitePathCodec->normalizeKey($value);
 
         return $normalized !== '' ? $normalized : 'general';
-    }
-
-    private function extractXmlSuiteName(\SimpleXMLElement $xml, string $fallback): string
-    {
-        $rootName = trim((string) ($xml['name'] ?? ''));
-        if ($rootName !== '') {
-            return $rootName;
-        }
-
-        foreach ($xml->testsuite as $suiteNode) {
-            $childName = trim((string) ($suiteNode['name'] ?? ''));
-            if ($childName !== '') {
-                return $childName;
-            }
-        }
-
-        return $fallback;
-    }
-
-    private function extractXmlDisplayName(\SimpleXMLElement $xml, string $fallback): string
-    {
-        return $this->suitePathCodec->humanizeLabel($this->extractXmlSuiteName($xml, $fallback));
-    }
-
-    private function extractXmlGeneratedAt(\SimpleXMLElement $xml, ?string $updatedAt): ?string
-    {
-        $candidates = [
-            trim((string) ($xml['timestamp'] ?? '')),
-        ];
-
-        foreach ($xml->testsuite as $suiteNode) {
-            $candidates[] = trim((string) ($suiteNode['timestamp'] ?? ''));
-        }
-
-        foreach ($candidates as $candidate) {
-            if ($candidate === '') {
-                continue;
-            }
-
-            return $candidate;
-        }
-
-        return $updatedAt;
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function normalizeXmlTests(\SimpleXMLElement $xml): array
-    {
-        $tests = [];
-
-        if ($xml->getName() === 'testsuites') {
-            foreach ($xml->testsuite as $suiteNode) {
-                $tests = array_merge($tests, $this->normalizeXmlTests($suiteNode));
-            }
-
-            return $tests;
-        }
-
-        foreach ($xml->testcase as $testcase) {
-            $tests[] = $this->normalizeXmlTestCase($testcase);
-        }
-
-        foreach ($xml->testsuite as $suiteNode) {
-            $tests = array_merge($tests, $this->normalizeXmlTests($suiteNode));
-        }
-
-        return $tests;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function normalizeXmlTestCase(\SimpleXMLElement $testcase): array
-    {
-        $error = $this->extractXmlFailureMessage($testcase);
-
-        return [
-            'title' => $this->buildXmlTestTitle($testcase),
-            'status' => $error === null ? 'passed' : 'failed',
-            'error' => $error,
-            'screenshots' => [],
-            'steps' => [],
-        ];
-    }
-
-    private function buildXmlTestTitle(\SimpleXMLElement $testcase): string
-    {
-        $classname = trim((string) ($testcase['classname'] ?? ''));
-        $name = trim((string) ($testcase['name'] ?? ''));
-
-        if ($classname === '' && $name === '') {
-            return 'Teste sem nome';
-        }
-
-        if ($classname === '') {
-            return $name;
-        }
-
-        if ($name === '') {
-            return $classname;
-        }
-
-        return $classname.'::'.$name;
-    }
-
-    private function extractXmlFailureMessage(\SimpleXMLElement $testcase): ?string
-    {
-        foreach (['failure', 'error'] as $nodeName) {
-            if (!isset($testcase->{$nodeName})) {
-                continue;
-            }
-
-            foreach ($testcase->{$nodeName} as $failureNode) {
-                $message = trim((string) ($failureNode['message'] ?? ''));
-                $body = trim((string) $failureNode);
-
-                if ($message !== '') {
-                    return $message;
-                }
-
-                if ($body !== '') {
-                    return $body;
-                }
-            }
-        }
-
-        return null;
     }
 
     private function formatFileTime(string $path): ?string
