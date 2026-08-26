@@ -10,6 +10,7 @@ final class SmokeTestsIndexFactory
         private readonly SmokeReportReader $reportReader,
         private readonly SmokeRemoteIndexReaderInterface $remoteIndexReader,
         private readonly SmokeSuitePathCodec $suitePathCodec,
+        private readonly SmokeFlowchartMetadata $flowchartMetadata,
     ) {
     }
 
@@ -23,7 +24,7 @@ final class SmokeTestsIndexFactory
                 continue;
             }
 
-            $suites[] = $report;
+            $suites[] = $this->flowchartMetadata->enrichSuite($report);
         }
 
         foreach ($this->remoteIndexReader->readSuites() as $report) {
@@ -31,7 +32,7 @@ final class SmokeTestsIndexFactory
                 continue;
             }
 
-            $suites[] = $report;
+            $suites[] = $this->flowchartMetadata->enrichSuite($report);
         }
 
         usort($suites, function (array $left, array $right): int {
@@ -51,6 +52,8 @@ final class SmokeTestsIndexFactory
         $testSummary = $this->buildTestSummary($suites);
         $typeSummary = $this->buildTypeSummary($types);
 
+        $flowcharts = $this->flowchartMetadata->groupSuites($suites);
+
         return [
             'generatedAt' => date(DATE_ATOM),
             'status' => $suiteSummary['failed'] === 0 ? 'passed' : 'failed',
@@ -61,8 +64,12 @@ final class SmokeTestsIndexFactory
                 'types' => $typeSummary,
                 'suites' => $suiteSummary,
                 'tests' => $testSummary,
+                'flowcharts' => [
+                    'total' => count($flowcharts),
+                ],
             ],
             'types' => $types,
+            'flowcharts' => $flowcharts,
             'suites' => $suites,
             'links' => [
                 'self' => '/tests',
@@ -345,8 +352,12 @@ final class SmokeTestsIndexFactory
                     'passed' => 0,
                     'failed' => 0,
                 ],
+                'flowcharts' => [
+                    'total' => 0,
+                ],
             ],
             'types' => [],
+            'flowcharts' => [],
             'suites' => [],
             'links' => [
                 'self' => '/tests',
