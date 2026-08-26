@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace ControleOnline\SmokeTestsPlayground\Tests\Service;
 
+use ControleOnline\SmokeTestsPlayground\Service\SmokeFlowchartMetadata;
 use ControleOnline\SmokeTestsPlayground\Service\SmokeReportReader;
 use ControleOnline\SmokeTestsPlayground\Service\SmokeRemoteIndexReaderInterface;
 use ControleOnline\SmokeTestsPlayground\Service\SmokeSuitePathCodec;
 use ControleOnline\SmokeTestsPlayground\Service\SmokeTestsIndexFactory;
 use ControleOnline\SmokeTestsPlayground\Service\SmokeTestsSettings;
+use ControleOnline\SmokeTestsPlayground\Service\SmokeXmlReportParser;
 use PHPUnit\Framework\TestCase;
 
 final class SmokeTestsIndexFactoryTest extends TestCase
@@ -29,7 +31,9 @@ final class SmokeTestsIndexFactoryTest extends TestCase
         self::assertSame(['total' => 0, 'passed' => 0, 'failed' => 0], $index['summary']['suites']);
         self::assertSame(['total' => 0, 'passed' => 0, 'failed' => 0], $index['summary']['tests']);
         self::assertSame([], $index['types']);
+        self::assertSame([], $index['flowcharts']);
         self::assertSame([], $index['suites']);
+        self::assertSame(['total' => 0], $index['summary']['flowcharts']);
     }
 
     public function testCreateBuildsTypesFromJsonAndXmlReports(): void
@@ -200,6 +204,68 @@ XML);
         self::assertNotEmpty($index['suites'][0]['error']);
     }
 
+    public function testCreateExposesFlowchartIdsAndAdminLinks(): void
+    {
+        $projectDir = $this->makeProjectDir();
+        $this->writeJsonReport($projectDir, 'browser-smoke', 'sales-production-balcao', [
+            'generatedAt' => '2026-08-26T12:00:00.000Z',
+            'suite' => 'sales-production-balcao',
+            'displayName' => 'Venda / produção — balcão',
+            'flowchartIds' => [1],
+            'flowKey' => 'sales-production',
+            'tests' => [
+                [
+                    'title' => 'pedido prepaid no balcão',
+                    'status' => 'passed',
+                    'error' => null,
+                    'screenshots' => [],
+                ],
+            ],
+        ]);
+        $this->writeJsonReport($projectDir, 'browser-smoke', 'legacy-login', [
+            'generatedAt' => '2026-08-26T11:00:00.000Z',
+            'suite' => 'legacy-login',
+            'displayName' => 'Legacy Login',
+            'tests' => [
+                [
+                    'title' => 'faz login',
+                    'status' => 'passed',
+                    'error' => null,
+                    'screenshots' => [],
+                ],
+            ],
+        ]);
+
+        $index = $this->makeFactory($projectDir)->create();
+
+        $sales = null;
+        $legacy = null;
+        foreach ($index['suites'] as $suite) {
+            if ($suite['suite'] === 'sales-production-balcao') {
+                $sales = $suite;
+            }
+            if ($suite['suite'] === 'legacy-login') {
+                $legacy = $suite;
+            }
+        }
+
+        self::assertNotNull($sales);
+        self::assertNotNull($legacy);
+        self::assertSame([1], $sales['flowchartIds']);
+        self::assertSame(['https://admin.controleonline.com/admin/flowcharts/1'], $sales['flowchartLinks']);
+        self::assertSame('sales-production', $sales['flowKey']);
+        self::assertSame([1], $sales['tests'][0]['flowchartIds']);
+        self::assertSame(['https://admin.controleonline.com/admin/flowcharts/1'], $sales['tests'][0]['flowchartLinks']);
+        self::assertSame([], $legacy['flowchartIds']);
+        self::assertSame([], $legacy['flowchartLinks']);
+        self::assertNull($legacy['flowKey']);
+        self::assertCount(1, $index['flowcharts']);
+        self::assertSame(1, $index['flowcharts'][0]['id']);
+        self::assertSame('https://admin.controleonline.com/admin/flowcharts/1', $index['flowcharts'][0]['link']);
+        self::assertSame(['sales-production'], $index['flowcharts'][0]['flowKeys']);
+        self::assertSame(['total' => 1], $index['summary']['flowcharts']);
+    }
+
     private function makeFactory(string $projectDir, array $remoteSuites = []): SmokeTestsIndexFactory
     {
         $this->resetEnv();
@@ -207,11 +273,14 @@ XML);
         putenv('SMOKE_TESTS_PLAYGROUND_TESTS_PATH='.$_ENV['SMOKE_TESTS_PLAYGROUND_TESTS_PATH']);
 
         $settings = new SmokeTestsSettings($projectDir);
+        $codec = new SmokeSuitePathCodec();
+        $flowchartMetadata = new SmokeFlowchartMetadata();
 
         return new SmokeTestsIndexFactory(
-            new SmokeReportReader($settings, new SmokeSuitePathCodec()),
+            new SmokeReportReader($settings, $codec, $flowchartMetadata, new SmokeXmlReportParser($codec)),
             $this->makeRemoteReader($remoteSuites),
-            new SmokeSuitePathCodec(),
+            $codec,
+            $flowchartMetadata,
         );
     }
 
