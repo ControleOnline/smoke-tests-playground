@@ -64,10 +64,14 @@ final class SmokeTestsControllerTest extends KernelTestCase
 
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('application/json', $response->headers->get('content-type'));
-        self::assertSame($response->getContent(), $indexJsonResponse->getContent());
-        self::assertSame($response->getContent(), $apiResponse->getContent());
+        $indexPayload = json_decode((string) $indexJsonResponse->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        $apiPayload = json_decode((string) $apiResponse->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        $responsePayload = json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        unset($responsePayload['generatedAt'], $indexPayload['generatedAt'], $apiPayload['generatedAt']);
+        self::assertSame($responsePayload, $indexPayload);
+        self::assertSame($responsePayload, $apiPayload);
 
-        $payload = json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        $payload = $responsePayload;
 
         self::assertSame('passed', $payload['status']);
         self::assertSame(100, $payload['progress']);
