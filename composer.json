@@ -11,12 +11,12 @@
   ],
   "require": {
     "php": "^8.2",
-    "symfony/config": "^7.1",
-    "symfony/console": "^7.1",
-    "symfony/dependency-injection": "^7.1",
-    "symfony/framework-bundle": "^7.1",
-    "symfony/process": "^7.1",
-    "symfony/yaml": "^7.1"
+    "symfony/config": "*",
+    "symfony/console": "*",
+    "symfony/dependency-injection": "*",
+    "symfony/framework-bundle": "*",
+    "symfony/process": "*",
+    "symfony/yaml": "*"
   },
   "autoload": {
     "psr-4": {
