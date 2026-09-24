@@ -1,3 +1,5 @@
 [submodule "docs/wiki"]
 	path = docs/wiki
 	url = https://github.com/ControleOnline/smoke-tests-playground.wiki.git
+
+	branch = dev
