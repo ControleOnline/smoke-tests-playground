@@ -1,0 +1,13 @@
+{
+  "version": "1.0.2",
+  "rc": 1,
+  "branch": "rc/1.0.2-rc.1",
+  "baseMaster": "ca4057f9c6ad37ffc5874605dd3bc08dc03d62d8",
+  "tasks": [
+    167
+  ],
+  "repositories": {
+    "ControleOnline/smoke-tests-playground": "fad35c27c8d28d6a4d28a39d2aee2864e6b15d14"
+  },
+  "frozen": true
+}
